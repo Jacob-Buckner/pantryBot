@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { getWebSocketService, ChatMessage, Recipe, ToolActivity } from '../services/websocket';
+import { getWebSocketService, ChatMessage, Recipe } from '../services/websocket';
 import RecipeCarousel from '../components/recipes/RecipeCarousel';
 import ReactMarkdown from 'react-markdown';
 
