@@ -61,6 +61,22 @@ Example format after getting recipes:
 
 Be warm, practical, and family-friendly. Keep it simple and helpful.`;
 
+// Helper function to extract text from MCP content
+function extractTextFromContent(content: any): string {
+  if (!content) return '';
+
+  if (Array.isArray(content)) {
+    const textContent = content.find((item) => item.type === 'text');
+    return textContent ? textContent.text : JSON.stringify(content);
+  }
+
+  if (typeof content === 'object' && content.type === 'text') {
+    return content.text;
+  }
+
+  return JSON.stringify(content);
+}
+
 export class ChatHandler {
   private anthropic: Anthropic;
 
@@ -128,11 +144,8 @@ export class ChatHandler {
 
               // Extract recipe data if this was find_recipes
               if (toolUse.name === 'find_recipes' && result.content) {
-                const toolOutput = JSON.parse(
-                  Array.isArray(result.content)
-                    ? result.content[0].text
-                    : result.content
-                );
+                const contentText = extractTextFromContent(result.content);
+                const toolOutput = JSON.parse(contentText);
                 if (toolOutput.recipes) {
                   extractedRecipes = toolOutput.recipes;
                 }
@@ -145,9 +158,7 @@ export class ChatHandler {
               return {
                 type: 'tool_result' as const,
                 tool_use_id: toolUse.id,
-                content: Array.isArray(result.content)
-                  ? result.content[0].text
-                  : JSON.stringify(result.content),
+                content: extractTextFromContent(result.content),
               };
             } catch (error: any) {
               toolCall.status = 'failed';

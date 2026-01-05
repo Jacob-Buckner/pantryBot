@@ -7,6 +7,22 @@ import { getMCPClient } from './mcpClient.js';
 
 const router = express.Router();
 
+// Helper function to extract text from MCP content
+function extractTextFromContent(content: any): string {
+  if (!content) return '';
+
+  if (Array.isArray(content)) {
+    const textContent = content.find((item) => item.type === 'text');
+    return textContent ? textContent.text : JSON.stringify(content);
+  }
+
+  if (typeof content === 'object' && content.type === 'text') {
+    return content.text;
+  }
+
+  return JSON.stringify(content);
+}
+
 // Health check
 router.get('/health', async (req: Request, res: Response) => {
   try {
@@ -33,9 +49,8 @@ router.get('/api/recipes', async (req: Request, res: Response) => {
     const mcpClient = await getMCPClient();
     const result = await mcpClient.callTool('list_saved_recipes', {});
 
-    const content = Array.isArray(result.content)
-      ? JSON.parse(result.content[0].text)
-      : result.content;
+    const contentText = extractTextFromContent(result.content);
+    const content = JSON.parse(contentText);
 
     res.json(content);
   } catch (error: any) {
@@ -52,9 +67,8 @@ router.get('/api/recipes/:name', async (req: Request, res: Response) => {
       recipe_name: req.params.name,
     });
 
-    const content = Array.isArray(result.content)
-      ? JSON.parse(result.content[0].text)
-      : result.content;
+    const contentText = extractTextFromContent(result.content);
+    const content = JSON.parse(contentText);
 
     res.json(content);
   } catch (error: any) {
@@ -78,9 +92,8 @@ router.post('/api/recipes', async (req: Request, res: Response) => {
       recipe_content: content,
     });
 
-    const resultContent = Array.isArray(result.content)
-      ? JSON.parse(result.content[0].text)
-      : result.content;
+    const contentText = extractTextFromContent(result.content);
+    const resultContent = JSON.parse(contentText);
 
     res.json(resultContent);
   } catch (error: any) {
@@ -97,9 +110,8 @@ router.get('/api/pantry/summary', async (req: Request, res: Response) => {
       category: 'all',
     });
 
-    const content = Array.isArray(result.content)
-      ? JSON.parse(result.content[0].text)
-      : result.content;
+    const contentText = extractTextFromContent(result.content);
+    const content = JSON.parse(contentText);
 
     res.json(content);
   } catch (error: any) {
@@ -116,9 +128,8 @@ router.get('/api/pantry/:category', async (req: Request, res: Response) => {
       category: req.params.category,
     });
 
-    const content = Array.isArray(result.content)
-      ? JSON.parse(result.content[0].text)
-      : result.content;
+    const contentText = extractTextFromContent(result.content);
+    const content = JSON.parse(contentText);
 
     res.json(content);
   } catch (error: any) {
@@ -133,9 +144,8 @@ router.get('/api/shopping', async (req: Request, res: Response) => {
     const mcpClient = await getMCPClient();
     const result = await mcpClient.callTool('view_shopping_list', {});
 
-    const content = Array.isArray(result.content)
-      ? JSON.parse(result.content[0].text)
-      : result.content;
+    const contentText = extractTextFromContent(result.content);
+    const content = JSON.parse(contentText);
 
     res.json(content);
   } catch (error: any) {

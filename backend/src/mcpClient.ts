@@ -75,7 +75,7 @@ export class PantryBotMCPClient {
 
     console.log(`✅ Tool ${name} completed`);
 
-    return result;
+    return result as CallToolResult;
   }
 
   async close(): Promise<void> {
