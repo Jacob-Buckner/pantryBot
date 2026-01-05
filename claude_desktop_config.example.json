@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "pantrybot": {
+      "command": "python3",
+      "args": ["/Users/jake/Dev/Agent/pantrybot_mcp_server.py"],
+      "env": {
+        "GROCY_API_URL": "http://192.168.0.83:9283/api",
+        "GROCY_API_KEY": "your_grocy_api_key_here",
+        "SPOONACULAR_API_KEY": "your_spoonacular_api_key_here",
+        "RECIPE_DIR": "/Users/jake/Dev/Agent/recipes"
+      }
+    }
+  }
+}

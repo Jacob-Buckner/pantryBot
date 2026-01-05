@@ -1,0 +1,39 @@
+services:
+  # PantryBot MCP Server with HTTP Bridge (Claude API)
+  pantrybot:
+    build: .
+    container_name: pantrybot
+    ports:
+      - "${PANTRYBOT_PORT:-9999}:8000"
+    env_file:
+      - .env
+    environment:
+      - PORT=8000
+      - RECIPE_DIR=/app/recipes
+    volumes:
+      - ${RECIPE_DIR:-E:/pantrybot/recipes}:/app/recipes  # Windows: E drive
+    restart: unless-stopped
+    networks:
+      - pantrybot_network
+
+  # Open WebUI - Browser-based interface
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3004:8080"
+    environment:
+      - OPENAI_API_BASE_URL=http://pantrybot:8000/v1
+      - OPENAI_API_KEY=not-needed
+      - WEBUI_SECRET_KEY=5975cf1be3fbdf7c0520f74b0fd33996b137fc54ad07b47ee444fbec856a2d66
+    volumes:
+      - E:/pantrybot/open-webui:/app/backend/data
+    restart: unless-stopped
+    depends_on:
+      - pantrybot
+    networks:
+      - pantrybot_network
+
+networks:
+  pantrybot_network:
+    driver: bridge

@@ -1,0 +1,18 @@
+# PantryBot MCP Server Dependencies
+
+# MCP SDK for building MCP servers
+mcp>=1.0.0
+
+# HTTP client for Grocy API calls
+httpx>=0.27.0
+
+# Environment variable management (optional but recommended)
+python-dotenv>=1.0.0
+
+# HTTP Bridge dependencies
+fastapi>=0.104.0
+uvicorn>=0.24.0
+pydantic>=2.5.0
+
+# AI SDKs
+anthropic>=0.39.0
