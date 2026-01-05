@@ -1,22 +1,21 @@
 version: '3.8'
 
 services:
-  # Grocy - Pantry Management System (OPTIONAL - comment out if using external Grocy)
-  # Uncomment this section if you want to run Grocy locally
-  # grocy:
-  #   image: linuxserver/grocy:latest
-  #   container_name: pantrybot-grocy
-  #   environment:
-  #     - PUID=1000
-  #     - PGID=1000
-  #     - TZ=America/Chicago
-  #   volumes:
-  #     - grocy-data:/config
-  #   ports:
-  #     - "9283:80"
-  #   restart: unless-stopped
-  #   networks:
-  #     - pantrybot-network
+  # Grocy - Pantry Management System
+  grocy:
+    image: linuxserver/grocy:latest
+    container_name: pantrybot-grocy
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - grocy-data:/config
+    ports:
+      - "9283:80"
+    restart: unless-stopped
+    networks:
+      - pantrybot-network
 
   # PantryBot Backend (MCP Client + API + WebSocket)
   backend:
@@ -25,7 +24,7 @@ services:
       dockerfile: backend/Dockerfile
     container_name: pantrybot-backend
     environment:
-      - GROCY_API_URL=${GROCY_API_URL}
+      - GROCY_API_URL=${GROCY_API_URL:-http://grocy/api}
       - GROCY_API_KEY=${GROCY_API_KEY}
       - SPOONACULAR_API_KEY=${SPOONACULAR_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
@@ -37,8 +36,8 @@ services:
       - conversation-data:/app/conversations
     ports:
       - "8080:8080"
-    # depends_on:
-    #   - grocy  # Commented out - using external Grocy
+    depends_on:
+      - grocy
     restart: unless-stopped
     networks:
       - pantrybot-network
