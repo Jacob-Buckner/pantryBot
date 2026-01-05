@@ -221,7 +221,17 @@ async def add_stock(product_name: str, amount: float, best_before_date: str = No
     # First, find the product ID
     product_search = await find_product_id_by_name(product_name)
     if not product_search.get("found"):
-        return {"success": False, "error": f"Product '{product_name}' not found in Grocy"}
+        # Auto-create the product if it doesn't exist
+        logger.info(f"🆕 Product '{product_name}' not found, creating it...")
+        create_result = await create_product(product_name)
+
+        if not create_result.get("success"):
+            return {"success": False, "error": f"Product '{product_name}' not found and could not be created: {create_result.get('error')}"}
+
+        # Re-search for the newly created product
+        product_search = await find_product_id_by_name(product_name)
+        if not product_search.get("found"):
+            return {"success": False, "error": f"Product '{product_name}' was created but could not be found"}
 
     matches = product_search.get("matches", [])
     if len(matches) > 1:
@@ -571,3 +581,486 @@ async def list_recipes() -> Dict[str, Any]:
             "success": False,
             "error": f"Failed to list recipes: {str(e)}"
         }
+"""
+Extended Grocy API Tools
+Additional convenience functions for chores, tasks, batteries, and more
+"""
+
+import httpx
+from typing import Dict, Any, Optional
+from pantry_tools import get_grocy_headers, GROCY_API_URL
+
+
+# ============================================================================
+# GENERIC GROCY API ACCESS
+# ============================================================================
+
+async def grocy_api(
+    endpoint: str,
+    method: str = "GET",
+    body: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
+    """
+    Generic Grocy API access for any endpoint.
+
+    Common endpoints:
+    - /stock - Current stock
+    - /objects/chores - List chores
+    - /chores/{id}/execute - Complete chore
+    - /objects/batteries - List batteries
+    - /batteries/{id}/charge - Charge battery
+    - /objects/tasks - List tasks
+    - /tasks/{id}/complete - Complete task
+    - /objects/products - List all products
+    - /objects/locations - List storage locations
+    - /objects/quantity_units - List units
+    - And 50+ more...
+
+    Args:
+        endpoint: API endpoint (e.g., "/objects/chores")
+        method: HTTP method (GET, POST, PUT, DELETE)
+        body: Optional request body for POST/PUT
+
+    Returns:
+        JSON response from Grocy API
+    """
+    url = f"{GROCY_API_URL}{endpoint}"
+
+    async with httpx.AsyncClient() as client:
+        try:
+            if method == "GET":
+                response = await client.get(url, headers=get_grocy_headers(), timeout=10.0)
+            elif method == "POST":
+                response = await client.post(url, headers=get_grocy_headers(), json=body, timeout=10.0)
+            elif method == "PUT":
+                response = await client.put(url, headers=get_grocy_headers(), json=body, timeout=10.0)
+            elif method == "DELETE":
+                response = await client.delete(url, headers=get_grocy_headers(), timeout=10.0)
+            else:
+                return {"success": False, "error": f"Unsupported method: {method}"}
+
+            if response.status_code >= 400:
+                return {
+                    "success": False,
+                    "error": f"HTTP {response.status_code}: {response.text}"
+                }
+
+            # Return raw JSON (Claude will interpret it)
+            if response.text:
+                return response.json()
+            else:
+                return {"success": True, "status_code": response.status_code}
+
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Grocy API error: {str(e)}"
+            }
+
+
+# ============================================================================
+# CHORE MANAGEMENT
+# ============================================================================
+
+async def get_chores_status() -> Dict[str, Any]:
+    """
+    Get all chores with their status and next execution time.
+    Shows which chores are due or overdue.
+    """
+    return await grocy_api("/chores")
+
+
+async def complete_chore(chore_name: str) -> Dict[str, Any]:
+    """
+    Mark a chore as completed.
+
+    Args:
+        chore_name: Name of the chore (e.g., "Clean bathroom")
+
+    Returns:
+        Success confirmation with next execution time
+    """
+    # First, find the chore by name
+    chores_response = await grocy_api("/objects/chores")
+
+    if not chores_response or "success" in chores_response and not chores_response["success"]:
+        return chores_response
+
+    # Search for chore by name (case-insensitive)
+    chore = None
+    for c in chores_response:
+        if c.get("name", "").lower() == chore_name.lower():
+            chore = c
+            break
+
+    if not chore:
+        return {
+            "success": False,
+            "error": f"Chore '{chore_name}' not found",
+            "available_chores": [c.get("name") for c in chores_response]
+        }
+
+    # Execute the chore
+    result = await grocy_api(
+        f"/chores/{chore['id']}/execute",
+        method="POST",
+        body={"tracked_time": None, "done_by": None}
+    )
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": f"Completed chore: {chore['name']}",
+        "chore_id": chore["id"]
+    }
+
+
+async def add_chore(
+    name: str,
+    period_days: int = 7,
+    assignment_type: str = "no-assignment"
+) -> Dict[str, Any]:
+    """
+    Add a new recurring chore.
+
+    Args:
+        name: Chore name (e.g., "Water plants")
+        period_days: How often (in days) the chore repeats (default: 7)
+        assignment_type: "no-assignment", "in-alphabetical-order", or "random"
+
+    Returns:
+        Success confirmation with chore ID
+    """
+    chore_data = {
+        "name": name,
+        "period_type": "daily",
+        "period_days": period_days,
+        "assignment_type": assignment_type,
+        "assignment_config": None,
+        "next_execution_assigned_to_user_id": None,
+        "track_date_only": False,
+        "rollover": False,
+        "consume_product_on_execution": False,
+        "product_id": None,
+        "product_amount": None
+    }
+
+    result = await grocy_api("/objects/chores", method="POST", body=chore_data)
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": f"Added chore: {name} (repeats every {period_days} days)",
+        "chore_id": result.get("created_object_id")
+    }
+
+
+# ============================================================================
+# TASK MANAGEMENT
+# ============================================================================
+
+async def get_pending_tasks() -> Dict[str, Any]:
+    """
+    Get all tasks that are not yet completed.
+    """
+    all_tasks = await grocy_api("/tasks")
+
+    if "success" in all_tasks and not all_tasks["success"]:
+        return all_tasks
+
+    # Filter for incomplete tasks (Grocy /tasks endpoint already returns only incomplete)
+    return {
+        "success": True,
+        "tasks": all_tasks,
+        "total_pending": len(all_tasks) if isinstance(all_tasks, list) else 0
+    }
+
+
+async def complete_task(task_name: str) -> Dict[str, Any]:
+    """
+    Mark a task as completed.
+
+    Args:
+        task_name: Name of the task
+
+    Returns:
+        Success confirmation
+    """
+    # Get all tasks
+    tasks_response = await grocy_api("/objects/tasks")
+
+    if not tasks_response or "success" in tasks_response and not tasks_response["success"]:
+        return tasks_response
+
+    # Find task by name (case-insensitive)
+    task = None
+    for t in tasks_response:
+        if t.get("name", "").lower() == task_name.lower():
+            task = t
+            break
+
+    if not task:
+        return {
+            "success": False,
+            "error": f"Task '{task_name}' not found",
+            "available_tasks": [t.get("name") for t in tasks_response if not t.get("done")]
+        }
+
+    # Complete the task
+    result = await grocy_api(f"/tasks/{task['id']}/complete", method="POST")
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": f"Completed task: {task['name']}",
+        "task_id": task["id"]
+    }
+
+
+async def add_task(name: str, due_date: Optional[str] = None) -> Dict[str, Any]:
+    """
+    Add a new task to the task list.
+
+    Args:
+        name: Task description
+        due_date: Optional due date in YYYY-MM-DD format
+
+    Returns:
+        Success confirmation with task ID
+    """
+    task_data = {
+        "name": name,
+        "due_date": due_date,
+        "done": False
+    }
+
+    result = await grocy_api("/objects/tasks", method="POST", body=task_data)
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": f"Added task: {name}",
+        "task_id": result.get("created_object_id")
+    }
+
+
+# ============================================================================
+# BATTERY MANAGEMENT
+# ============================================================================
+
+async def get_batteries_status() -> Dict[str, Any]:
+    """
+    Get all batteries with their charge status.
+    Shows which batteries need charging based on last charge cycle.
+    """
+    return await grocy_api("/batteries")
+
+
+async def charge_battery(battery_name: str) -> Dict[str, Any]:
+    """
+    Track a battery charge cycle.
+
+    Args:
+        battery_name: Name of the battery (e.g., "TV Remote")
+
+    Returns:
+        Success confirmation with next charge date
+    """
+    # Get all batteries
+    batteries_response = await grocy_api("/objects/batteries")
+
+    if not batteries_response or "success" in batteries_response and not batteries_response["success"]:
+        return batteries_response
+
+    # Find battery by name (case-insensitive)
+    battery = None
+    for b in batteries_response:
+        if b.get("name", "").lower() == battery_name.lower():
+            battery = b
+            break
+
+    if not battery:
+        return {
+            "success": False,
+            "error": f"Battery '{battery_name}' not found",
+            "available_batteries": [b.get("name") for b in batteries_response]
+        }
+
+    # Track charge cycle
+    result = await grocy_api(
+        f"/batteries/{battery['id']}/charge",
+        method="POST",
+        body={"tracked_time": None}
+    )
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": f"Tracked charge for battery: {battery['name']}",
+        "battery_id": battery["id"]
+    }
+
+
+# ============================================================================
+# PRODUCT CREATION
+# ============================================================================
+
+async def create_product(
+    name: str,
+    location: str = "Pantry",
+    quantity_unit: str = "piece",
+    min_stock_amount: int = 0
+) -> Dict[str, Any]:
+    """
+    Create a new product in Grocy.
+    Automatically creates it if it doesn't exist when adding stock.
+
+    Args:
+        name: Product name
+        location: Storage location (default: "Pantry")
+        quantity_unit: Unit of measurement (default: "piece")
+        min_stock_amount: Minimum stock level for warnings (default: 0)
+
+    Returns:
+        Success confirmation with product ID
+    """
+    # First, get or create location
+    locations = await grocy_api("/objects/locations")
+    location_id = None
+
+    if isinstance(locations, list):
+        for loc in locations:
+            if loc.get("name", "").lower() == location.lower():
+                location_id = loc["id"]
+                break
+
+    if not location_id:
+        # Create location
+        loc_result = await grocy_api(
+            "/objects/locations",
+            method="POST",
+            body={"name": location, "description": "Auto-created by PantryBot"}
+        )
+        location_id = loc_result.get("created_object_id", 1)
+
+    # Get or create quantity unit
+    units = await grocy_api("/objects/quantity_units")
+    unit_id = None
+
+    if isinstance(units, list):
+        for unit in units:
+            if unit.get("name", "").lower() == quantity_unit.lower():
+                unit_id = unit["id"]
+                break
+
+    if not unit_id:
+        # Use default unit (1) if not found
+        unit_id = 1
+
+    # Create product
+    product_data = {
+        "name": name,
+        "location_id": location_id,
+        "qu_id_purchase": unit_id,
+        "qu_id_stock": unit_id,
+        "min_stock_amount": min_stock_amount,
+        "description": "Auto-created by PantryBot"
+    }
+
+    result = await grocy_api("/objects/products", method="POST", body=product_data)
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": f"Created product: {name}",
+        "product_id": result.get("created_object_id"),
+        "location": location,
+        "unit": quantity_unit
+    }
+
+
+# ============================================================================
+# STOCK MONITORING
+# ============================================================================
+
+async def get_expiring_soon(days: int = 7) -> Dict[str, Any]:
+    """
+    Get products that are expiring soon.
+
+    Args:
+        days: Number of days to look ahead (default: 7)
+
+    Returns:
+        List of products expiring within the specified days
+    """
+    volatile = await grocy_api("/stock/volatile")
+
+    if "success" in volatile and not volatile["success"]:
+        return volatile
+
+    # Extract expiring and expired products
+    expiring = volatile.get("expiring_products", [])
+    expired = volatile.get("expired_products", [])
+
+    return {
+        "success": True,
+        "expiring_soon": expiring,
+        "already_expired": expired,
+        "total_items": len(expiring) + len(expired)
+    }
+
+
+async def get_missing_products() -> Dict[str, Any]:
+    """
+    Get products that are below minimum stock level.
+    """
+    volatile = await grocy_api("/stock/volatile")
+
+    if "success" in volatile and not volatile["success"]:
+        return volatile
+
+    missing = volatile.get("missing_products", [])
+
+    return {
+        "success": True,
+        "missing_products": missing,
+        "total_missing": len(missing)
+    }
+
+
+async def add_missing_to_shopping_list(shopping_list_id: int = 1) -> Dict[str, Any]:
+    """
+    Add all products below minimum stock to the shopping list.
+
+    Args:
+        shopping_list_id: ID of the shopping list (default: 1)
+
+    Returns:
+        Success confirmation with number of items added
+    """
+    result = await grocy_api(
+        "/stock/shoppinglist/add-missing-products",
+        method="POST",
+        body={"list_id": shopping_list_id}
+    )
+
+    if "success" in result and not result["success"]:
+        return result
+
+    return {
+        "success": True,
+        "message": "Added missing products to shopping list",
+        "shopping_list_id": shopping_list_id
+    }

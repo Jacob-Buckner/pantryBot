@@ -36,7 +36,21 @@ from pantry_tools import (
     get_recipe_details,
     save_recipe,
     get_recipe,
-    list_recipes
+    list_recipes,
+    # New extended Grocy tools
+    grocy_api,
+    get_chores_status,
+    complete_chore,
+    add_chore,
+    get_pending_tasks,
+    complete_task,
+    add_task,
+    get_batteries_status,
+    charge_battery,
+    create_product,
+    get_expiring_soon,
+    get_missing_products,
+    add_missing_to_shopping_list
 )
 
 # Initialize MCP server
@@ -266,6 +280,249 @@ async def list_saved_recipes() -> dict:
             - recipes: list of {name, filename, size_kb, modified}
     """
     return await list_recipes()
+
+
+# ============================================================================
+# GENERIC GROCY API ACCESS
+# ============================================================================
+
+@mcp.tool()
+async def call_grocy_api(endpoint: str, method: str = "GET", body: dict = None) -> dict:
+    """
+    Call any Grocy API endpoint directly for advanced operations.
+    Use this for operations not covered by convenience tools.
+
+    Args:
+        endpoint: API endpoint path (e.g., "/objects/chores", "/stock/volatile")
+        method: HTTP method - GET, POST, PUT, or DELETE (default: GET)
+        body: Optional request body for POST/PUT requests
+
+    Common endpoints:
+        - /objects/chores - List all chores
+        - /objects/batteries - List batteries
+        - /objects/tasks - List tasks
+        - /objects/equipment - List equipment
+        - /objects/products - List all products
+        - /objects/locations - List storage locations
+        - /stock/volatile - Get expiring/missing products
+        - /system/info - Get Grocy system information
+
+    Returns:
+        Raw JSON response from Grocy API
+    """
+    return await grocy_api(endpoint, method, body)
+
+
+# ============================================================================
+# CHORE MANAGEMENT TOOLS
+# ============================================================================
+
+@mcp.tool()
+async def get_chores() -> dict:
+    """
+    Get all household chores with their status and next execution time.
+    Shows which chores are due, overdue, or upcoming.
+
+    Returns:
+        List of chores with their schedule and status
+    """
+    return await get_chores_status()
+
+
+@mcp.tool()
+async def mark_chore_complete(chore_name: str) -> dict:
+    """
+    Mark a household chore as completed.
+    Automatically calculates the next due date based on the chore's schedule.
+
+    Args:
+        chore_name: Name of the chore (e.g., "Clean bathroom", "Water plants")
+
+    Returns:
+        Confirmation with next execution time
+
+    Example:
+        "I finished cleaning the bathroom" → mark_chore_complete("Clean bathroom")
+    """
+    return await complete_chore(chore_name)
+
+
+@mcp.tool()
+async def create_chore(name: str, period_days: int = 7) -> dict:
+    """
+    Add a new recurring household chore.
+
+    Args:
+        name: Chore name (e.g., "Water plants", "Change air filter")
+        period_days: How often the chore repeats in days (default: 7 for weekly)
+
+    Returns:
+        Confirmation with chore ID
+
+    Example:
+        "Add 'clean the gutters' as a monthly chore" → create_chore("Clean gutters", 30)
+    """
+    return await add_chore(name, period_days)
+
+
+# ============================================================================
+# TASK MANAGEMENT TOOLS
+# ============================================================================
+
+@mcp.tool()
+async def get_tasks() -> dict:
+    """
+    Get all pending tasks (to-do items) that haven't been completed yet.
+
+    Returns:
+        List of incomplete tasks with due dates
+    """
+    return await get_pending_tasks()
+
+
+@mcp.tool()
+async def mark_task_complete(task_name: str) -> dict:
+    """
+    Mark a task as completed.
+
+    Args:
+        task_name: Name of the task to complete
+
+    Returns:
+        Confirmation
+
+    Example:
+        "I called the plumber" → mark_task_complete("Call plumber")
+    """
+    return await complete_task(task_name)
+
+
+@mcp.tool()
+async def create_task(name: str, due_date: str = None) -> dict:
+    """
+    Add a new task to the to-do list.
+
+    Args:
+        name: Task description
+        due_date: Optional due date in YYYY-MM-DD format
+
+    Returns:
+        Confirmation with task ID
+
+    Example:
+        "Remind me to call the plumber next week" → create_task("Call plumber", "2026-01-12")
+    """
+    return await add_task(name, due_date)
+
+
+# ============================================================================
+# BATTERY MANAGEMENT TOOLS
+# ============================================================================
+
+@mcp.tool()
+async def get_batteries() -> dict:
+    """
+    Get all batteries with their charge status and next charge date.
+    Shows which batteries need charging soon.
+
+    Returns:
+        List of batteries with charge tracking information
+    """
+    return await get_batteries_status()
+
+
+@mcp.tool()
+async def track_battery_charge(battery_name: str) -> dict:
+    """
+    Track that a battery has been charged.
+    Updates the last charge date and calculates next charge due.
+
+    Args:
+        battery_name: Name of the battery (e.g., "TV Remote", "Smoke Detector")
+
+    Returns:
+        Confirmation with next charge date
+
+    Example:
+        "I changed the smoke detector battery" → track_battery_charge("Smoke Detector")
+    """
+    return await charge_battery(battery_name)
+
+
+# ============================================================================
+# PRODUCT CREATION TOOL
+# ============================================================================
+
+@mcp.tool()
+async def auto_create_product(name: str, location: str = "Pantry", unit: str = "piece") -> dict:
+    """
+    Automatically create a new product in Grocy if it doesn't exist.
+    Use this when adding stock for a product that hasn't been set up yet.
+
+    Args:
+        name: Product name
+        location: Where it's stored (default: "Pantry")
+        unit: Unit of measurement - "piece", "kg", "lb", "liter", etc. (default: "piece")
+
+    Returns:
+        Confirmation with product ID
+
+    Example:
+        User says "I bought kale" but kale doesn't exist
+        → auto_create_product("Kale", "Refrigerator", "bunch")
+    """
+    return await create_product(name, location, unit)
+
+
+# ============================================================================
+# STOCK MONITORING TOOLS
+# ============================================================================
+
+@mcp.tool()
+async def check_expiring_products(days: int = 7) -> dict:
+    """
+    Check which products are expiring soon or already expired.
+
+    Args:
+        days: Number of days to look ahead (default: 7)
+
+    Returns:
+        Lists of expiring and expired products
+
+    Example:
+        "What food is expiring soon?" → check_expiring_products(7)
+    """
+    return await get_expiring_soon(days)
+
+
+@mcp.tool()
+async def check_low_stock() -> dict:
+    """
+    Check which products are below their minimum stock level.
+    These are items that need to be restocked.
+
+    Returns:
+        List of products running low
+
+    Example:
+        "What am I running low on?" → check_low_stock()
+    """
+    return await get_missing_products()
+
+
+@mcp.tool()
+async def auto_add_to_shopping_list() -> dict:
+    """
+    Automatically add all low-stock products to the shopping list.
+    Adds everything that's below minimum stock level.
+
+    Returns:
+        Confirmation with number of items added
+
+    Example:
+        "Add everything I'm low on to my shopping list" → auto_add_to_shopping_list()
+    """
+    return await add_missing_to_shopping_list()
 
 
 # ============================================================================
