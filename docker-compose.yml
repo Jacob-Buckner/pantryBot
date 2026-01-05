@@ -1,39 +1,69 @@
-services:
-  # PantryBot MCP Server with HTTP Bridge (Claude API)
-  pantrybot:
-    build: .
-    container_name: pantrybot
-    ports:
-      - "${PANTRYBOT_PORT:-9999}:8000"
-    env_file:
-      - .env
-    environment:
-      - PORT=8000
-      - RECIPE_DIR=/app/recipes
-    volumes:
-      - ${RECIPE_DIR:-E:/pantrybot/recipes}:/app/recipes  # Windows: E drive
-    restart: unless-stopped
-    networks:
-      - pantrybot_network
+version: '3.8'
 
-  # Open WebUI - Browser-based interface
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    ports:
-      - "3004:8080"
+services:
+  # Grocy - Pantry Management System
+  grocy:
+    image: linuxserver/grocy:latest
+    container_name: pantrybot-grocy
     environment:
-      - OPENAI_API_BASE_URL=http://pantrybot:8000/v1
-      - OPENAI_API_KEY=not-needed
-      - WEBUI_SECRET_KEY=5975cf1be3fbdf7c0520f74b0fd33996b137fc54ad07b47ee444fbec856a2d66
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
     volumes:
-      - E:/pantrybot/open-webui:/app/backend/data
+      - grocy-data:/config
+    ports:
+      - "9283:80"
     restart: unless-stopped
-    depends_on:
-      - pantrybot
     networks:
-      - pantrybot_network
+      - pantrybot-network
+
+  # PantryBot Backend (MCP Client + API + WebSocket)
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: pantrybot-backend
+    environment:
+      - GROCY_API_URL=http://grocy/api
+      - GROCY_API_KEY=${GROCY_API_KEY}
+      - SPOONACULAR_API_KEY=${SPOONACULAR_API_KEY}
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY}
+      - CLAUDE_MODEL=claude-sonnet-4-5-20250929
+      - RECIPE_DIR=/app/recipes
+      - PORT=8080
+    volumes:
+      - recipe-data:/app/recipes
+      - conversation-data:/app/conversations
+    ports:
+      - "8080:8080"
+    depends_on:
+      - grocy
+    restart: unless-stopped
+    networks:
+      - pantrybot-network
+
+  # PantryBot Frontend (React UI)
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: pantrybot-frontend
+    environment:
+      - VITE_BACKEND_URL=http://backend:8080
+      - VITE_BACKEND_WS=ws://backend:8080
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - pantrybot-network
+
+volumes:
+  grocy-data:
+  recipe-data:
+  conversation-data:
 
 networks:
-  pantrybot_network:
+  pantrybot-network:
     driver: bridge

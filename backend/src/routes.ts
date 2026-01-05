@@ -1,0 +1,166 @@
+/**
+ * REST API Routes
+ */
+
+import express, { Request, Response } from 'express';
+import { getMCPClient } from './mcpClient.js';
+
+const router = express.Router();
+
+// Health check
+router.get('/health', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const isConnected = mcpClient.getConnectionStatus();
+
+    res.json({
+      status: 'healthy',
+      mcpServer: isConnected ? 'connected' : 'disconnected',
+      grocy: process.env.GROCY_API_URL || 'not configured',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: error.message,
+    });
+  }
+});
+
+// Get saved recipes
+router.get('/api/recipes', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const result = await mcpClient.callTool('list_saved_recipes', {});
+
+    const content = Array.isArray(result.content)
+      ? JSON.parse(result.content[0].text)
+      : result.content;
+
+    res.json(content);
+  } catch (error: any) {
+    console.error('❌ Error fetching recipes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get specific recipe
+router.get('/api/recipes/:name', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const result = await mcpClient.callTool('get_saved_recipe', {
+      recipe_name: req.params.name,
+    });
+
+    const content = Array.isArray(result.content)
+      ? JSON.parse(result.content[0].text)
+      : result.content;
+
+    res.json(content);
+  } catch (error: any) {
+    console.error('❌ Error fetching recipe:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Save recipe
+router.post('/api/recipes', async (req: Request, res: Response) => {
+  try {
+    const { name, content } = req.body;
+
+    if (!name || !content) {
+      return res.status(400).json({ error: 'Name and content required' });
+    }
+
+    const mcpClient = await getMCPClient();
+    const result = await mcpClient.callTool('save_favorite_recipe', {
+      recipe_name: name,
+      recipe_content: content,
+    });
+
+    const resultContent = Array.isArray(result.content)
+      ? JSON.parse(result.content[0].text)
+      : result.content;
+
+    res.json(resultContent);
+  } catch (error: any) {
+    console.error('❌ Error saving recipe:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get pantry summary
+router.get('/api/pantry/summary', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const result = await mcpClient.callTool('get_pantry', {
+      category: 'all',
+    });
+
+    const content = Array.isArray(result.content)
+      ? JSON.parse(result.content[0].text)
+      : result.content;
+
+    res.json(content);
+  } catch (error: any) {
+    console.error('❌ Error fetching pantry:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get pantry by category
+router.get('/api/pantry/:category', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const result = await mcpClient.callTool('get_pantry', {
+      category: req.params.category,
+    });
+
+    const content = Array.isArray(result.content)
+      ? JSON.parse(result.content[0].text)
+      : result.content;
+
+    res.json(content);
+  } catch (error: any) {
+    console.error('❌ Error fetching pantry:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get shopping list
+router.get('/api/shopping', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const result = await mcpClient.callTool('view_shopping_list', {});
+
+    const content = Array.isArray(result.content)
+      ? JSON.parse(result.content[0].text)
+      : result.content;
+
+    res.json(content);
+  } catch (error: any) {
+    console.error('❌ Error fetching shopping list:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// List available MCP tools
+router.get('/api/tools', async (req: Request, res: Response) => {
+  try {
+    const mcpClient = await getMCPClient();
+    const tools = await mcpClient.listTools();
+
+    res.json({
+      tools: tools.tools.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      })),
+    });
+  } catch (error: any) {
+    console.error('❌ Error listing tools:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+export default router;

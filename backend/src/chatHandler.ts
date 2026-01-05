@@ -1,0 +1,202 @@
+/**
+ * Chat Handler - Orchestrates Claude API with MCP tool calling
+ */
+
+import Anthropic from '@anthropic-ai/sdk';
+import { getMCPClient } from './mcpClient.js';
+import type { MessageParam, Tool } from '@anthropic-ai/sdk/resources/messages.js';
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp?: Date;
+  recipes?: any[];
+  toolCalls?: ToolCall[];
+}
+
+export interface ToolCall {
+  name: string;
+  status: 'executing' | 'completed' | 'failed';
+  input?: any;
+  output?: any;
+}
+
+export interface ChatResponse {
+  message: string;
+  toolCalls: ToolCall[];
+  recipes?: any[];
+}
+
+const SYSTEM_PROMPT = `You are PantryBot, a helpful cooking assistant for a busy family.
+
+You have access to:
+- Real pantry inventory via Grocy
+- Recipe search via Spoonacular API
+- Saved family recipes
+
+When asked for meal suggestions:
+1. Check pantry with get_pantry
+2. Search recipes with find_recipes (use 3-5 key ingredients)
+3. Present options sorted by match % (best first)
+4. When user chooses, get full recipe with get_recipe_instructions
+5. Offer to save favorites
+
+IMPORTANT: After calling find_recipes, present results with:
+- Recipe title
+- Match percentage (prominent - this shows how much they can make with current ingredients)
+- Missing ingredients (if any)
+- Cook time and servings
+- Why it's a good choice
+
+Example format after getting recipes:
+"Here are your best options (sorted by what you have in stock):
+
+1. **Salmon Cakes - 92% match** ⭐
+   Missing: panko breadcrumbs
+   Ready in 30 minutes - Perfect for using your canned salmon!
+
+2. **Salmon Pasta - 67% match**
+   Missing: pasta, parmesan cheese, cream
+   A bit more shopping needed but delicious!"
+
+Be warm, practical, and family-friendly. Keep it simple and helpful.`;
+
+export class ChatHandler {
+  private anthropic: Anthropic;
+
+  constructor(apiKey: string) {
+    this.anthropic = new Anthropic({
+      apiKey,
+    });
+  }
+
+  async handleChat(
+    messages: ChatMessage[],
+    onToolActivity?: (toolCall: ToolCall) => void
+  ): Promise<ChatResponse> {
+    const mcpClient = await getMCPClient();
+
+    // Get available tools from MCP server
+    const toolsList = await mcpClient.listTools();
+    const claudeTools: Tool[] = toolsList.tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description || '',
+      input_schema: tool.inputSchema as any,
+    }));
+
+    // Convert ChatMessage[] to Anthropic MessageParam[]
+    const anthropicMessages: MessageParam[] = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    const maxIterations = 10;
+    const toolCalls: ToolCall[] = [];
+    let extractedRecipes: any[] = [];
+
+    for (let iteration = 0; iteration < maxIterations; iteration++) {
+      console.log(`🔄 Iteration ${iteration + 1}/${maxIterations}`);
+
+      const response = await this.anthropic.messages.create({
+        model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: anthropicMessages,
+        tools: claudeTools,
+      });
+
+      // Check if Claude wants to use tools
+      if (response.stop_reason === 'tool_use') {
+        const toolUseBlocks = response.content.filter(
+          (block) => block.type === 'tool_use'
+        );
+
+        // Execute tools
+        const toolResults = await Promise.all(
+          toolUseBlocks.map(async (toolUse: any) => {
+            const toolCall: ToolCall = {
+              name: toolUse.name,
+              status: 'executing',
+              input: toolUse.input,
+            };
+
+            toolCalls.push(toolCall);
+            onToolActivity?.(toolCall);
+
+            try {
+              const result = await mcpClient.callTool(toolUse.name, toolUse.input);
+
+              // Extract recipe data if this was find_recipes
+              if (toolUse.name === 'find_recipes' && result.content) {
+                const toolOutput = JSON.parse(
+                  Array.isArray(result.content)
+                    ? result.content[0].text
+                    : result.content
+                );
+                if (toolOutput.recipes) {
+                  extractedRecipes = toolOutput.recipes;
+                }
+              }
+
+              toolCall.status = 'completed';
+              toolCall.output = result.content;
+              onToolActivity?.(toolCall);
+
+              return {
+                type: 'tool_result' as const,
+                tool_use_id: toolUse.id,
+                content: Array.isArray(result.content)
+                  ? result.content[0].text
+                  : JSON.stringify(result.content),
+              };
+            } catch (error: any) {
+              toolCall.status = 'failed';
+              toolCall.output = error.message;
+              onToolActivity?.(toolCall);
+
+              return {
+                type: 'tool_result' as const,
+                tool_use_id: toolUse.id,
+                content: `Error: ${error.message}`,
+                is_error: true,
+              };
+            }
+          })
+        );
+
+        // Add assistant response with tool use
+        anthropicMessages.push({
+          role: 'assistant',
+          content: response.content,
+        });
+
+        // Add tool results
+        anthropicMessages.push({
+          role: 'user',
+          content: toolResults,
+        });
+
+        continue; // Next iteration
+      }
+
+      // Final response (no more tools)
+      const textContent = response.content
+        .filter((block) => block.type === 'text')
+        .map((block: any) => block.text)
+        .join('\n');
+
+      return {
+        message: textContent,
+        toolCalls,
+        recipes: extractedRecipes.length > 0 ? extractedRecipes : undefined,
+      };
+    }
+
+    // Hit max iterations
+    console.warn('⚠️ Hit max iterations for tool calling');
+    return {
+      message: 'I apologize, but I encountered an issue processing your request. Please try again.',
+      toolCalls,
+    };
+  }
+}
