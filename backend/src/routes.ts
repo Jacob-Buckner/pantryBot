@@ -55,6 +55,11 @@ router.get('/api/recipes', async (req: Request, res: Response) => {
     const contentText = extractTextFromContent(result.content);
     let recipes = JSON.parse(contentText);
 
+    // Ensure recipes is an array
+    if (!Array.isArray(recipes)) {
+      recipes = [];
+    }
+
     // Extract image URLs from descriptions and format response
     const formattedRecipes = recipes.map((recipe: any) => {
       const description = recipe.description || '';
