@@ -36,6 +36,7 @@ from pantry_tools import (
     search_recipes_by_name,
     get_recipe_details,
     save_recipe,
+    save_recipe_to_grocy,
     get_recipe,
     list_recipes,
     # New extended Grocy tools
@@ -266,6 +267,60 @@ async def get_recipe_instructions(recipe_id: int) -> dict:
         → get_recipe_instructions(663050)
     """
     return await get_recipe_details(recipe_id)
+
+
+@mcp.tool()
+async def save_recipe_to_grocy_db(
+    recipe_id: int,
+    recipe_title: str,
+    servings: int,
+    ready_in_minutes: int,
+    ingredients: list,
+    instructions: list,
+    image_url: str = None
+) -> dict:
+    """
+    Save a Spoonacular recipe to Grocy's recipe database with full pantry integration.
+    This is the PREFERRED way to save recipes - keeps everything in Grocy!
+
+    Features:
+    - Saves recipe to Grocy's recipe system (not just filesystem)
+    - Auto-creates missing products at 0 quantity
+    - Links ingredients to pantry products
+    - Stores Spoonacular image URL for display
+    - Enables shopping list integration
+
+    Args:
+        recipe_id: Spoonacular recipe ID
+        recipe_title: Recipe name
+        servings: Number of servings
+        ready_in_minutes: Cook time in minutes
+        ingredients: List of ingredient strings
+        instructions: List of instruction steps
+        image_url: Spoonacular image URL (optional)
+
+    Returns:
+        Dictionary with:
+            - success: bool
+            - grocy_recipe_id: ID in Grocy database
+            - created_products: List of products auto-created
+            - total_ingredients: Number of ingredients linked
+
+    Example workflow:
+        User: "Save this reuben sandwich recipe"
+        1. get_recipe_instructions(recipe_id) → get full details
+        2. save_recipe_to_grocy_db(recipe_id, title, servings, time, ingredients, instructions, image_url)
+        → Saves to Grocy with auto-created products
+    """
+    return await save_recipe_to_grocy(
+        recipe_id=recipe_id,
+        recipe_title=recipe_title,
+        servings=servings,
+        ready_in_minutes=ready_in_minutes,
+        ingredients=ingredients,
+        instructions=instructions,
+        image_url=image_url
+    )
 
 
 @mcp.tool()

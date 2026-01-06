@@ -579,6 +579,113 @@ async def save_recipe(recipe_name: str, recipe_content: str) -> Dict[str, Any]:
         }
 
 
+async def save_recipe_to_grocy(
+    recipe_id: int,
+    recipe_title: str,
+    servings: int = 4,
+    ready_in_minutes: int = 30,
+    ingredients: list = None,
+    instructions: list = None,
+    image_url: str = None
+) -> Dict[str, Any]:
+    """
+    Save a Spoonacular recipe to Grocy's recipe system with full integration.
+    Auto-creates missing products at 0 quantity for shopping list integration.
+    """
+    if not GROCY_API_KEY:
+        return {"success": False, "error": "Grocy API key not configured"}
+
+    logger.info(f"💾 Saving recipe '{recipe_title}' to Grocy...")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            # 1. Create the recipe in Grocy
+            recipe_data = {
+                "name": recipe_title,
+                "description": f"From Spoonacular (ID: {recipe_id})\nCook time: {ready_in_minutes} min\nServings: {servings}",
+                "base_servings": servings,
+                "desired_servings": servings,
+                "type": "normal"
+            }
+
+            # Add image URL to description if provided
+            if image_url:
+                recipe_data["description"] += f"\n\nImage: {image_url}"
+
+            # Add instructions to description
+            if instructions:
+                recipe_data["description"] += "\n\nInstructions:\n" + "\n".join(instructions)
+
+            recipe_response = await client.post(
+                f"{GROCY_API_URL}/objects/recipes",
+                headers=get_grocy_headers(),
+                json=recipe_data,
+                timeout=10.0
+            )
+            recipe_response.raise_for_status()
+            grocy_recipe = recipe_response.json()
+            grocy_recipe_id = grocy_recipe.get("created_object_id")
+
+            logger.info(f"✅ Created recipe in Grocy (ID: {grocy_recipe_id})")
+
+            # 2. Process ingredients and create missing products
+            created_products = []
+            if ingredients:
+                for idx, ingredient in enumerate(ingredients):
+                    # Try to find existing product
+                    product_search = await find_product_id_by_name(ingredient)
+
+                    if not product_search.get("found"):
+                        # Product doesn't exist - create it at 0 quantity
+                        logger.info(f"🆕 Creating missing product: {ingredient}")
+                        create_result = await create_product(ingredient, location="Pantry", unit="piece")
+
+                        if create_result.get("success"):
+                            created_products.append(ingredient)
+                            # Re-search to get the new product ID
+                            product_search = await find_product_id_by_name(ingredient)
+
+                    # Add ingredient to recipe (if we have a product ID)
+                    if product_search.get("found"):
+                        product_id = product_search.get("product_id")
+
+                        # Create recipe ingredient link
+                        recipe_pos_data = {
+                            "recipe_id": grocy_recipe_id,
+                            "product_id": product_id,
+                            "amount": 1,  # Default amount (Grocy uses generic units)
+                            "note": ingredient,  # Store original ingredient text
+                            "ingredient_group": "",
+                            "product_group": idx + 1  # Position in recipe
+                        }
+
+                        await client.post(
+                            f"{GROCY_API_URL}/objects/recipes_pos",
+                            headers=get_grocy_headers(),
+                            json=recipe_pos_data,
+                            timeout=10.0
+                        )
+
+            logger.info(f"✅ Recipe saved to Grocy with {len(ingredients or [])} ingredients")
+            if created_products:
+                logger.info(f"🆕 Created {len(created_products)} new products: {', '.join(created_products)}")
+
+            return {
+                "success": True,
+                "message": f"Recipe '{recipe_title}' saved to Grocy",
+                "grocy_recipe_id": grocy_recipe_id,
+                "created_products": created_products,
+                "total_ingredients": len(ingredients or [])
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to save recipe to Grocy: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Failed to save recipe: {str(e)}"
+            }
+
+
 async def get_recipe(recipe_name: str) -> Dict[str, Any]:
     """Read a recipe from filesystem"""
     safe_name = recipe_name.lower().replace(" ", "_")

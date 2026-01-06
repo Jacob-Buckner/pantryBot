@@ -45,7 +45,10 @@ Workflow:
 2. If asking what to make: Check pantry with get_pantry, then find_recipes(ingredients)
 3. Present recipe options (with match % if using find_recipes)
 4. When user chooses, get full recipe with get_recipe_instructions
-5. Offer to save favorites
+5. When user wants to save: Use save_recipe_to_grocy_db (PREFERRED - full Grocy integration)
+   - Auto-creates missing products at 0 quantity for shopping lists
+   - Links ingredients to pantry
+   - Stores recipe in Grocy database with image URL
 
 IMPORTANT: After calling find_recipes, present results with:
 - Recipe title
