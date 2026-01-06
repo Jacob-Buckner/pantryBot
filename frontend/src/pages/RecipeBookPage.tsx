@@ -92,41 +92,32 @@ export default function RecipeBookPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-3">
           {recipes.map((recipe) => (
             <div
               key={recipe.id}
-              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              className="bg-white rounded-lg shadow-sm p-5 hover:shadow-md transition-shadow cursor-pointer border border-gray-200"
               onClick={() => viewRecipe(recipe.id, recipe.name)}
             >
-              {/* Recipe Image */}
-              {recipe.image_url ? (
-                <img
-                  src={recipe.image_url}
-                  alt={recipe.name}
-                  className="w-full h-48 object-cover"
-                />
-              ) : (
-                <div className="w-full h-48 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
-                  <span className="text-white text-6xl">🍳</span>
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-gray-900 mb-1">
+                    {recipe.name}
+                  </h3>
+                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                    {recipe.servings && (
+                      <span className="flex items-center gap-1">
+                        <span>🍽️</span>
+                        <span>{recipe.servings} servings</span>
+                      </span>
+                    )}
+                    <span className="text-gray-400">
+                      Added: {new Date(recipe.modified).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
-              )}
-
-              {/* Recipe Info */}
-              <div className="p-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  {recipe.name}
-                </h3>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {recipe.servings && (
-                    <p className="flex items-center gap-2">
-                      <span>🍽️</span>
-                      <span>{recipe.servings} servings</span>
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-400">
-                    Added: {new Date(recipe.modified).toLocaleDateString()}
-                  </p>
+                <div className="text-primary-600 text-sm font-medium">
+                  View Recipe →
                 </div>
               </div>
             </div>
