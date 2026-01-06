@@ -476,6 +476,7 @@ async def get_recipe_details(recipe_id: int) -> Dict[str, Any]:
             return {
                 "success": True,
                 "title": recipe.get("title"),
+                "image": recipe.get("image"),
                 "servings": recipe.get("servings"),
                 "ready_in_minutes": recipe.get("readyInMinutes"),
                 "ingredients": ingredients,

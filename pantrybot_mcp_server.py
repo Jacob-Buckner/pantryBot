@@ -258,6 +258,7 @@ async def get_recipe_instructions(recipe_id: int) -> dict:
         Dictionary with:
             - success: bool
             - title: Recipe name
+            - image: Spoonacular image URL (IMPORTANT: use this when saving!)
             - servings: Number of servings
             - ready_in_minutes: Cooking time
             - ingredients: Full ingredient list
@@ -310,9 +311,10 @@ async def save_recipe_to_grocy_db(
 
     Example workflow:
         User: "Save this reuben sandwich recipe"
-        1. get_recipe_instructions(recipe_id) → get full details
-        2. save_recipe_to_grocy_db(recipe_id, title, servings, time, ingredients, instructions, image_url)
-        → Saves to Grocy with auto-created products
+        1. get_recipe_instructions(recipe_id) → returns {title, image, servings, ready_in_minutes, ingredients, instructions}
+        2. save_recipe_to_grocy_db(recipe_id, title, servings, ready_in_minutes, ingredients, instructions, image)
+        → IMPORTANT: Pass the 'image' field from step 1 as image_url parameter!
+        → Saves to Grocy with auto-created products and Spoonacular image
     """
     return await save_recipe_to_grocy(
         recipe_id=recipe_id,

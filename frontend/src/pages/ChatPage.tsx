@@ -15,10 +15,7 @@ export default function ChatPage() {
   const ws = getWebSocketService();
 
   useEffect(() => {
-    // Connect to WebSocket
-    ws.connect();
-
-    // Set up event handlers
+    // Set up event handlers BEFORE connecting
     ws.onConnected((conversationId) => {
       console.log('Connected with conversation ID:', conversationId);
       setIsConnected(true);
@@ -51,6 +48,18 @@ export default function ChatPage() {
       console.error('WebSocket error:', error);
       setIsConnected(false);
     });
+
+    // Check if already connected and update state
+    if (ws.isConnected()) {
+      setIsConnected(true);
+      const convId = ws.getConversationId();
+      if (convId) {
+        console.log('Already connected with conversation ID:', convId);
+      }
+    }
+
+    // Connect to WebSocket
+    ws.connect();
 
     // Cleanup
     return () => {
