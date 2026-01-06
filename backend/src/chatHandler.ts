@@ -148,8 +148,8 @@ export class ChatHandler {
             try {
               const result = await mcpClient.callTool(toolUse.name, toolUse.input);
 
-              // Extract recipe data if this was find_recipes
-              if (toolUse.name === 'find_recipes' && result.content) {
+              // Extract recipe data if this was find_recipes or search_recipes
+              if ((toolUse.name === 'find_recipes' || toolUse.name === 'search_recipes') && result.content) {
                 const contentText = extractTextFromContent(result.content);
                 const toolOutput = JSON.parse(contentText);
                 if (toolOutput.recipes) {

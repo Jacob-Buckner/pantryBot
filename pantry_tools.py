@@ -516,7 +516,7 @@ async def search_recipes_by_name(query: str, number: int = 5) -> Dict[str, Any]:
             data = response.json()
             recipes = data.get("results", [])
 
-            # Simplify the response
+            # Simplify the response - format compatible with find_recipes for consistent UI
             simplified = []
             for recipe in recipes:
                 simplified.append({
@@ -525,7 +525,10 @@ async def search_recipes_by_name(query: str, number: int = 5) -> Dict[str, Any]:
                     "image": recipe.get("image"),
                     "readyInMinutes": recipe.get("readyInMinutes"),
                     "servings": recipe.get("servings"),
-                    "summary": recipe.get("summary", "")[:200] + "..." if recipe.get("summary") else ""
+                    # Add fields for frontend compatibility (no pantry comparison for name search)
+                    "matchPercentage": 100,  # Name search means exact match
+                    "usedIngredients": 0,  # Not comparing to pantry
+                    "missedIngredients": []  # Unknown without pantry check
                 })
 
             logger.info(f"✅ Found {len(simplified)} recipes for '{query}'")
