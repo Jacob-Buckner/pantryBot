@@ -639,7 +639,7 @@ async def save_recipe_to_grocy(
                     if not product_search.get("found"):
                         # Product doesn't exist - create it at 0 quantity
                         logger.info(f"🆕 Creating missing product: {ingredient}")
-                        create_result = await create_product(ingredient, location="Pantry", unit="piece")
+                        create_result = await create_product(ingredient, location="Pantry", quantity_unit="piece")
 
                         if create_result.get("success"):
                             created_products.append(ingredient)
