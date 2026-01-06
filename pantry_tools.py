@@ -1217,10 +1217,28 @@ async def create_product(
     if "success" in result and not result["success"]:
         return result
 
+    product_id = result.get("created_object_id")
+
+    # Add initial stock entry at 0 quantity so it shows in Stock Overview
+    from datetime import datetime, timedelta
+    initial_stock_data = {
+        "amount": 0,
+        "best_before_date": (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d"),
+        "price": 0
+    }
+
+    await grocy_api(
+        f"/stock/products/{product_id}/add",
+        method="POST",
+        body=initial_stock_data
+    )
+
+    logger.info(f"✅ Created product '{name}' with initial 0 stock entry")
+
     return {
         "success": True,
-        "message": f"Created product: {name}",
-        "product_id": result.get("created_object_id"),
+        "message": f"Created product: {name} (added to stock at 0 quantity)",
+        "product_id": product_id,
         "location": location,
         "unit": quantity_unit
     }
