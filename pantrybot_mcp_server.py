@@ -330,21 +330,15 @@ async def save_recipe_to_grocy_db(
 @mcp.tool()
 async def save_favorite_recipe(recipe_name: str, recipe_content: str) -> dict:
     """
-    Save a recipe to the filesystem for later reference.
-    Use this to save family favorites or customized recipes.
+    DEPRECATED: DO NOT USE THIS TOOL!
+    Use save_recipe_to_grocy_db instead for proper Grocy integration.
 
-    Args:
-        recipe_name: Name for the recipe file (e.g., 'Salmon Cakes')
-        recipe_content: Full recipe content including ingredients and instructions
-
-    Returns:
-        Dictionary with success status, file path, and confirmation
-
-    Example:
-        "Save this salmon cakes recipe"
-        → save_favorite_recipe("Salmon Cakes", "Ingredients:\n...")
+    This tool saves to filesystem which doesn't integrate with pantry.
     """
-    return await save_recipe(recipe_name, recipe_content)
+    return {
+        "success": False,
+        "error": "This tool is deprecated. Use save_recipe_to_grocy_db instead for full Grocy integration with pantry and shopping lists."
+    }
 
 
 @mcp.tool()
