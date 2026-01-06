@@ -60,15 +60,13 @@ router.get('/api/recipes', async (req: Request, res: Response) => {
       throw new Error(`Grocy API error: ${response.status}`);
     }
 
-    let recipes = await response.json();
+    const recipes = await response.json() as any[];
 
     // Ensure recipes is an array
-    if (!Array.isArray(recipes)) {
-      recipes = [];
-    }
+    const recipeArray = Array.isArray(recipes) ? recipes : [];
 
     // Extract image URLs from descriptions and format response
-    const formattedRecipes = recipes.map((recipe: any) => {
+    const formattedRecipes = recipeArray.map((recipe: any) => {
       const description = recipe.description || '';
       let imageUrl = null;
 
@@ -121,7 +119,7 @@ router.get('/api/recipes/:id', async (req: Request, res: Response) => {
       throw new Error(`Grocy API error: ${response.status}`);
     }
 
-    const recipe = await response.json();
+    const recipe = await response.json() as any;
 
     res.json({
       success: true,
