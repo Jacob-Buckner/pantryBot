@@ -8,7 +8,6 @@ export default function ChatPage() {
   const [input, setInput] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [currentRecipes, setCurrentRecipes] = useState<Recipe[]>([]);
   const [toolActivity, setToolActivity] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -40,10 +39,6 @@ export default function ChatPage() {
       }
     });
 
-    ws.onRecipes((recipes) => {
-      setCurrentRecipes(recipes);
-    });
-
     ws.onError((error) => {
       console.error('WebSocket error:', error);
       setIsConnected(false);
@@ -70,7 +65,7 @@ export default function ChatPage() {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping, currentRecipes]);
+  }, [messages, isTyping]);
 
   const handleSend = () => {
     if (!input.trim() || !isConnected) return;
@@ -84,7 +79,6 @@ export default function ChatPage() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
-    setCurrentRecipes([]); // Clear previous recipes
 
     // Send to server
     ws.sendMessage(input);
@@ -104,8 +98,6 @@ export default function ChatPage() {
         timestamp: new Date(),
       },
     ]);
-
-    setCurrentRecipes([]); // Clear carousel
   };
 
   const getToolDisplayName = (toolName: string): string => {
@@ -183,16 +175,6 @@ export default function ChatPage() {
                   )}
                 </div>
               ))}
-
-              {/* Recipe carousel for current search (before assistant responds) */}
-              {currentRecipes.length > 0 && (
-                <div className="mt-4">
-                  <RecipeCarousel
-                    recipes={currentRecipes}
-                    onRecipeSelect={handleRecipeSelect}
-                  />
-                </div>
-              )}
 
               {/* Typing indicator */}
               {isTyping && (
