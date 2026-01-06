@@ -12,8 +12,8 @@ venv/
 ENV/
 .venv
 
-# Recipes data directory (may contain personal data)
-/recipes/
+# Data directory (recipes and conversations - may contain personal data)
+/data/
 
 # IDE
 .vscode/
@@ -45,6 +45,3 @@ out/
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Conversation history (may contain personal data)
-conversations/
