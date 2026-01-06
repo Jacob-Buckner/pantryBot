@@ -57,6 +57,19 @@ export class ChatWebSocketServer {
         conversationId,
       });
 
+      // Set up ping/pong to keep connection alive
+      const pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.ping();
+        } else {
+          clearInterval(pingInterval);
+        }
+      }, 30000); // Ping every 30 seconds
+
+      ws.on('pong', () => {
+        // Connection is alive
+      });
+
       ws.on('message', async (data: Buffer) => {
         try {
           const clientMsg: ClientMessage = JSON.parse(data.toString());
@@ -72,6 +85,7 @@ export class ChatWebSocketServer {
 
       ws.on('close', () => {
         console.log('👋 WebSocket connection closed');
+        clearInterval(pingInterval);
         this.sessions.delete(conversationId);
       });
 
