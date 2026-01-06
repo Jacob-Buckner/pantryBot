@@ -43,17 +43,24 @@ router.get('/health', async (req: Request, res: Response) => {
   }
 });
 
-// Get saved recipes from Grocy
+// Get saved recipes from Grocy (direct API call)
 router.get('/api/recipes', async (req: Request, res: Response) => {
   try {
-    const mcpClient = await getMCPClient();
-    const result = await mcpClient.callTool('call_grocy_api', {
-      endpoint: '/objects/recipes',
-      method: 'GET'
+    const grocyUrl = process.env.GROCY_API_URL || 'http://grocy/api';
+    const grocyKey = process.env.GROCY_API_KEY;
+
+    const response = await fetch(`${grocyUrl}/objects/recipes`, {
+      headers: {
+        'GROCY-API-KEY': grocyKey || '',
+        'accept': 'application/json'
+      }
     });
 
-    const contentText = extractTextFromContent(result.content);
-    let recipes = JSON.parse(contentText);
+    if (!response.ok) {
+      throw new Error(`Grocy API error: ${response.status}`);
+    }
+
+    let recipes = await response.json();
 
     // Ensure recipes is an array
     if (!Array.isArray(recipes)) {
@@ -97,17 +104,24 @@ router.get('/api/recipes', async (req: Request, res: Response) => {
   }
 });
 
-// Get specific recipe by ID from Grocy
+// Get specific recipe by ID from Grocy (direct API call)
 router.get('/api/recipes/:id', async (req: Request, res: Response) => {
   try {
-    const mcpClient = await getMCPClient();
-    const result = await mcpClient.callTool('call_grocy_api', {
-      endpoint: `/objects/recipes/${req.params.id}`,
-      method: 'GET'
+    const grocyUrl = process.env.GROCY_API_URL || 'http://grocy/api';
+    const grocyKey = process.env.GROCY_API_KEY;
+
+    const response = await fetch(`${grocyUrl}/objects/recipes/${req.params.id}`, {
+      headers: {
+        'GROCY-API-KEY': grocyKey || '',
+        'accept': 'application/json'
+      }
     });
 
-    const contentText = extractTextFromContent(result.content);
-    const recipe = JSON.parse(contentText);
+    if (!response.ok) {
+      throw new Error(`Grocy API error: ${response.status}`);
+    }
+
+    const recipe = await response.json();
 
     res.json({
       success: true,

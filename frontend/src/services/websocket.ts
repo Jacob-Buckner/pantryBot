@@ -57,7 +57,18 @@ export class WebSocketService {
 
   connect(): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      return; // Already connected
+      console.log('✅ Already connected');
+      // Trigger connected callback even if already connected
+      if (this.conversationId && this.onConnectedHandler) {
+        this.onConnectedHandler(this.conversationId);
+      }
+      return;
+    }
+
+    // Close any existing connection first
+    if (this.ws) {
+      this.ws.close();
+      this.ws = null;
     }
 
     console.log('🔌 Connecting to WebSocket:', this.url);
