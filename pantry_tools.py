@@ -415,14 +415,13 @@ async def search_recipes_by_ingredients(ingredients: str, number: int = 5) -> Di
                     "id": recipe.get("id"),
                     "title": recipe.get("title"),
                     "image": recipe.get("image"),
-                    "used_ingredients": used_count,
-                    "missed_ingredients": missed_count,
-                    "match_percentage": match_percentage,
-                    "missed_items": missed_items
+                    "usedIngredients": used_count,
+                    "matchPercentage": match_percentage,
+                    "missedIngredients": missed_items
                 })
 
             # Sort by match percentage (highest first)
-            simplified.sort(key=lambda x: x["match_percentage"], reverse=True)
+            simplified.sort(key=lambda x: x["matchPercentage"], reverse=True)
 
             logger.info(f"✅ Found {len(simplified)} recipes from Spoonacular (sorted by match %)")
 
