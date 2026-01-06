@@ -38,6 +38,8 @@ from pantry_tools import (
     save_recipe,
     save_recipe_to_grocy,
     get_recipe,
+    get_grocy_recipes,
+    get_grocy_recipe_by_id,
     list_recipes,
     # New extended Grocy tools
     grocy_api,

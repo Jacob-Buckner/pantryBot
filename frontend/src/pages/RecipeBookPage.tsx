@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 
 interface SavedRecipe {
+  id: number;
   name: string;
-  filename: string;
-  size_kb: number;
+  description: string;
+  servings: number;
+  image_url: string | null;
   modified: string;
 }
 
@@ -35,9 +37,9 @@ export default function RecipeBookPage() {
     }
   };
 
-  const viewRecipe = async (recipeName: string) => {
+  const viewRecipe = async (recipeId: number, recipeName: string) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/recipes/${encodeURIComponent(recipeName)}`);
+      const response = await fetch(`http://localhost:8080/api/recipes/${recipeId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -90,19 +92,42 @@ export default function RecipeBookPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {recipes.map((recipe) => (
             <div
-              key={recipe.filename}
-              className="bg-white rounded-lg shadow-sm p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => viewRecipe(recipe.name)}
+              key={recipe.id}
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => viewRecipe(recipe.id, recipe.name)}
             >
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {recipe.name}
-              </h3>
-              <div className="text-sm text-gray-500">
-                <p>Modified: {new Date(recipe.modified).toLocaleDateString()}</p>
-                <p>Size: {recipe.size_kb} KB</p>
+              {/* Recipe Image */}
+              {recipe.image_url ? (
+                <img
+                  src={recipe.image_url}
+                  alt={recipe.name}
+                  className="w-full h-48 object-cover"
+                />
+              ) : (
+                <div className="w-full h-48 bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center">
+                  <span className="text-white text-6xl">🍳</span>
+                </div>
+              )}
+
+              {/* Recipe Info */}
+              <div className="p-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  {recipe.name}
+                </h3>
+                <div className="text-sm text-gray-600 space-y-1">
+                  {recipe.servings && (
+                    <p className="flex items-center gap-2">
+                      <span>🍽️</span>
+                      <span>{recipe.servings} servings</span>
+                    </p>
+                  )}
+                  <p className="text-xs text-gray-400">
+                    Added: {new Date(recipe.modified).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
             </div>
           ))}

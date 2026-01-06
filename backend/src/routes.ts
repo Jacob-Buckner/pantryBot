@@ -43,34 +43,72 @@ router.get('/health', async (req: Request, res: Response) => {
   }
 });
 
-// Get saved recipes
+// Get saved recipes from Grocy
 router.get('/api/recipes', async (req: Request, res: Response) => {
   try {
     const mcpClient = await getMCPClient();
-    const result = await mcpClient.callTool('list_saved_recipes', {});
+    const result = await mcpClient.callTool('call_grocy_api', {
+      endpoint: '/objects/recipes',
+      method: 'GET'
+    });
 
     const contentText = extractTextFromContent(result.content);
-    const content = JSON.parse(contentText);
+    let recipes = JSON.parse(contentText);
 
-    res.json(content);
+    // Extract image URLs from descriptions and format response
+    const formattedRecipes = recipes.map((recipe: any) => {
+      const description = recipe.description || '';
+      let imageUrl = null;
+
+      // Extract image URL if present
+      if (description.includes('Image: ')) {
+        const lines = description.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('Image: ')) {
+            imageUrl = line.replace('Image: ', '').trim();
+            break;
+          }
+        }
+      }
+
+      return {
+        id: recipe.id,
+        name: recipe.name,
+        description: description,
+        servings: recipe.base_servings,
+        image_url: imageUrl,
+        modified: recipe.row_created_timestamp
+      };
+    });
+
+    res.json({
+      success: true,
+      total_recipes: formattedRecipes.length,
+      recipes: formattedRecipes
+    });
   } catch (error: any) {
     console.error('❌ Error fetching recipes:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get specific recipe
-router.get('/api/recipes/:name', async (req: Request, res: Response) => {
+// Get specific recipe by ID from Grocy
+router.get('/api/recipes/:id', async (req: Request, res: Response) => {
   try {
     const mcpClient = await getMCPClient();
-    const result = await mcpClient.callTool('get_saved_recipe', {
-      recipe_name: req.params.name,
+    const result = await mcpClient.callTool('call_grocy_api', {
+      endpoint: `/objects/recipes/${req.params.id}`,
+      method: 'GET'
     });
 
     const contentText = extractTextFromContent(result.content);
-    const content = JSON.parse(contentText);
+    const recipe = JSON.parse(contentText);
 
-    res.json(content);
+    res.json({
+      success: true,
+      recipe: recipe,
+      content: recipe.description
+    });
   } catch (error: any) {
     console.error('❌ Error fetching recipe:', error);
     res.status(500).json({ error: error.message });

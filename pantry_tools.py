@@ -686,6 +686,79 @@ async def save_recipe_to_grocy(
             }
 
 
+async def get_grocy_recipes() -> Dict[str, Any]:
+    """Get all recipes from Grocy database"""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{GROCY_API_URL}/objects/recipes",
+                headers=get_grocy_headers(),
+                timeout=10.0
+            )
+            response.raise_for_status()
+            recipes = response.json()
+
+            # Extract image URLs from descriptions
+            simplified = []
+            for recipe in recipes:
+                description = recipe.get("description", "")
+
+                # Extract image URL if present
+                image_url = None
+                if "Image: " in description:
+                    lines = description.split("\n")
+                    for line in lines:
+                        if line.startswith("Image: "):
+                            image_url = line.replace("Image: ", "").strip()
+                            break
+
+                simplified.append({
+                    "id": recipe.get("id"),
+                    "name": recipe.get("name"),
+                    "description": description,
+                    "servings": recipe.get("base_servings"),
+                    "image_url": image_url
+                })
+
+            return {
+                "success": True,
+                "total_recipes": len(simplified),
+                "recipes": simplified
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to get Grocy recipes: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Failed to fetch recipes: {str(e)}"
+            }
+
+
+async def get_grocy_recipe_by_id(recipe_id: int) -> Dict[str, Any]:
+    """Get a specific recipe from Grocy by ID"""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                f"{GROCY_API_URL}/objects/recipes/{recipe_id}",
+                headers=get_grocy_headers(),
+                timeout=10.0
+            )
+            response.raise_for_status()
+            recipe = response.json()
+
+            return {
+                "success": True,
+                "recipe": recipe
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Failed to get Grocy recipe: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Failed to fetch recipe: {str(e)}"
+            }
+
+
 async def get_recipe(recipe_name: str) -> Dict[str, Any]:
     """Read a recipe from filesystem"""
     safe_name = recipe_name.lower().replace(" ", "_")
