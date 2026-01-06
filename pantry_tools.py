@@ -491,6 +491,59 @@ async def get_recipe_details(recipe_id: int) -> Dict[str, Any]:
             }
 
 
+async def search_recipes_by_name(query: str, number: int = 5) -> Dict[str, Any]:
+    """Search for recipes by name/query via Spoonacular API"""
+    if not SPOONACULAR_API_KEY:
+        return {"error": "Spoonacular API key not configured"}
+
+    logger.info(f"🔍 Searching Spoonacular for recipe: '{query}'")
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(
+                "https://api.spoonacular.com/recipes/complexSearch",
+                params={
+                    "apiKey": SPOONACULAR_API_KEY,
+                    "query": query,
+                    "number": number,
+                    "addRecipeInformation": True,
+                    "fillIngredients": True,
+                    "instructionsRequired": True
+                },
+                timeout=10.0
+            )
+            response.raise_for_status()
+            data = response.json()
+            recipes = data.get("results", [])
+
+            # Simplify the response
+            simplified = []
+            for recipe in recipes:
+                simplified.append({
+                    "id": recipe.get("id"),
+                    "title": recipe.get("title"),
+                    "image": recipe.get("image"),
+                    "readyInMinutes": recipe.get("readyInMinutes"),
+                    "servings": recipe.get("servings"),
+                    "summary": recipe.get("summary", "")[:200] + "..." if recipe.get("summary") else ""
+                })
+
+            logger.info(f"✅ Found {len(simplified)} recipes for '{query}'")
+
+            return {
+                "success": True,
+                "total_recipes": len(simplified),
+                "recipes": simplified
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Recipe name search failed: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Failed to search recipes: {str(e)}"
+            }
+
+
 async def save_recipe(recipe_name: str, recipe_content: str) -> Dict[str, Any]:
     """Save a recipe to filesystem"""
     safe_name = recipe_name.lower().replace(" ", "_").replace("/", "_")

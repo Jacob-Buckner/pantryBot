@@ -33,6 +33,7 @@ from pantry_tools import (
     add_to_shopping_list,
     get_shopping_list,
     search_recipes_by_ingredients,
+    search_recipes_by_name,
     get_recipe_details,
     save_recipe,
     get_recipe,
@@ -206,6 +207,39 @@ async def find_recipes(ingredients: str, number: int = 5) -> dict:
         → find_recipes("salmon,rice")
     """
     return await search_recipes_by_ingredients(ingredients, min(number, 10))
+
+
+@mcp.tool()
+async def search_recipes(query: str, number: int = 5) -> dict:
+    """
+    Search for recipes by name or description via Spoonacular API.
+    Use this when the user asks for a specific recipe by name (e.g., "reuben sandwich", "chicken parmesan").
+
+    Args:
+        query: Recipe name or search query (e.g., "reuben sandwich", "chocolate cake")
+        number: Number of recipes to return (default: 5, max: 10)
+
+    Returns:
+        Dictionary with:
+            - success: bool
+            - total_recipes: int
+            - recipes: list of matching recipes
+                Each recipe includes:
+                - id: Recipe ID for get_recipe_instructions
+                - title: Recipe name
+                - image: Recipe image URL
+                - readyInMinutes: Cooking time
+                - servings: Number of servings
+                - summary: Brief description
+
+    Example:
+        "Can I have a recipe for reuben sandwiches?"
+        → search_recipes("reuben sandwich")
+
+    Note: This searches by recipe NAME. To search by ingredients you have,
+          use find_recipes instead.
+    """
+    return await search_recipes_by_name(query, min(number, 10))
 
 
 @mcp.tool()
