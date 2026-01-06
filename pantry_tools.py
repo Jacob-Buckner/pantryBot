@@ -664,12 +664,19 @@ async def save_recipe_to_grocy(
                             "product_group": idx + 1  # Position in recipe
                         }
 
-                        await client.post(
-                            f"{GROCY_API_URL}/objects/recipes_pos",
-                            headers=get_grocy_headers(),
-                            json=recipe_pos_data,
-                            timeout=10.0
-                        )
+                        try:
+                            pos_response = await client.post(
+                                f"{GROCY_API_URL}/objects/recipes_pos",
+                                headers=get_grocy_headers(),
+                                json=recipe_pos_data,
+                                timeout=10.0
+                            )
+                            if pos_response.status_code >= 400:
+                                logger.error(f"❌ Failed to link ingredient '{ingredient}': HTTP {pos_response.status_code} - {pos_response.text}")
+                            else:
+                                logger.info(f"✅ Linked ingredient: {ingredient}")
+                        except Exception as e:
+                            logger.error(f"❌ Error linking ingredient '{ingredient}': {str(e)}")
 
             logger.info(f"✅ Recipe saved to Grocy with {len(ingredients or [])} ingredients")
             if created_products:
