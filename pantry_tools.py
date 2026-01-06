@@ -613,6 +613,10 @@ async def save_recipe_to_grocy(
             if image_url:
                 recipe_data["description"] += f"\n\nImage: {image_url}"
 
+            # Add ingredients to description
+            if ingredients:
+                recipe_data["description"] += "\n\nIngredients:\n" + "\n".join(f"• {ing}" for ing in ingredients)
+
             # Add instructions to description
             if instructions:
                 recipe_data["description"] += "\n\nInstructions:\n" + "\n".join(instructions)
