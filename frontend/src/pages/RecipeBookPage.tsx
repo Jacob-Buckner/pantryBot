@@ -22,7 +22,7 @@ export default function RecipeBookPage() {
   const fetchRecipes = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:8080/api/recipes');
+      const response = await fetch('/api/recipes');
       const data = await response.json();
 
       if (data.success) {
@@ -39,7 +39,7 @@ export default function RecipeBookPage() {
 
   const viewRecipe = async (recipeId: number, recipeName: string) => {
     try {
-      const response = await fetch(`http://localhost:8080/api/recipes/${recipeId}`);
+      const response = await fetch(`/api/recipes/${recipeId}`);
       const data = await response.json();
 
       if (data.success) {

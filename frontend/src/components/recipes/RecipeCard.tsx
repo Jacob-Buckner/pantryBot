@@ -39,16 +39,18 @@ export default function RecipeCard({ recipe, onSelect, compact = false }: Recipe
           alt={recipe.title}
           className="w-full h-48 object-cover"
         />
-        {/* Match Percentage Badge */}
-        <div className="absolute top-2 right-2">
-          <div
-            className={`${getMatchColor(
-              recipe.matchPercentage
-            )} text-white font-bold px-3 py-1 rounded-full text-sm shadow-lg`}
-          >
-            {recipe.matchPercentage}% match
+        {/* Match Percentage Badge - only show for ingredient-based searches */}
+        {(recipe.matchPercentage !== 100 || recipe.usedIngredients > 0) && (
+          <div className="absolute top-2 right-2">
+            <div
+              className={`${getMatchColor(
+                recipe.matchPercentage
+              )} text-white font-bold px-3 py-1 rounded-full text-sm shadow-lg`}
+            >
+              {recipe.matchPercentage}% match
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Recipe Info */}
@@ -73,30 +75,39 @@ export default function RecipeCard({ recipe, onSelect, compact = false }: Recipe
 
         {/* Match Details */}
         <div className="space-y-2">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-green-600">✓</span>
-            <span className="text-gray-700">
-              You have {recipe.usedIngredients} ingredients
-            </span>
-          </div>
+          {/* Only show ingredient match info if this was an ingredient-based search */}
+          {recipe.matchPercentage !== 100 || recipe.usedIngredients > 0 ? (
+            <>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-green-600">✓</span>
+                <span className="text-gray-700">
+                  You have {recipe.usedIngredients} ingredients
+                </span>
+              </div>
 
-          {recipe.missedIngredients.length > 0 && (
-            <div className="text-sm">
-              <span className="text-gray-600">Missing: </span>
-              <span className={getMatchTextColor(recipe.matchPercentage)}>
-                {recipe.missedIngredients.slice(0, 3).join(', ')}
-                {recipe.missedIngredients.length > 3 &&
-                  ` +${recipe.missedIngredients.length - 3} more`}
-              </span>
-            </div>
-          )}
+              {recipe.missedIngredients.length > 0 && (
+                <div className="text-sm">
+                  <span className="text-gray-600">Missing: </span>
+                  <span className={getMatchTextColor(recipe.matchPercentage)}>
+                    {recipe.missedIngredients.slice(0, 3).join(', ')}
+                    {recipe.missedIngredients.length > 3 &&
+                      ` +${recipe.missedIngredients.length - 3} more`}
+                  </span>
+                </div>
+              )}
 
-          {recipe.missedIngredients.length === 0 && (
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-green-600">⭐</span>
-              <span className="text-green-700 font-medium">
-                You have everything!
-              </span>
+              {recipe.missedIngredients.length === 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-green-600">⭐</span>
+                  <span className="text-green-700 font-medium">
+                    You have everything!
+                  </span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-sm text-gray-600">
+              Click "Get Recipe" to see full ingredient list
             </div>
           )}
         </div>

@@ -1,353 +1,193 @@
-# PantryBot Custom Client
+# PantryBot
 
-**AI-Powered Meal Planning with Custom Web Interface**
+**AI-powered pantry management using [Grocy](https://grocy.info/) and [Spoonacular](https://spoonacular.com/food-api)**
 
-A complete meal planning system combining Grocy (pantry management) + Spoonacular (recipes) + Claude AI with a beautiful, custom web interface designed specifically for family meal planning.
+PantryBot lets you manage your household pantry, discover recipes based on what you have, track chores and tasks, and more — all through natural language conversation with Claude.
 
-## Features
+## Two Ways to Use PantryBot
 
-- **Real-time Chat Interface** - Natural conversation with Claude about meal planning
-- **Visual Recipe Cards** - Spoonacular recipes with professional images
-- **Match Percentage Display** - See how much of each recipe you can make right now
-- **Recipe Carousel** - Swipeable recipe browsing with the best matches first
-- **Recipe Book** - Save and organize your favorite recipes
-- **Pantry Integration** - Direct connection to your Grocy instance
-- **WebSocket Real-time Updates** - See tool activity as it happens
-- **Mobile Responsive** - Works great on phones, tablets, and desktops
-- **Docker Deployment** - One command to run everything
+| | Claude Desktop (MCP Server) | Self-Hosted Web UI (Docker) |
+|---|---|---|
+| **Interface** | Claude Desktop app | Browser-based chat UI |
+| **Cost** | $0 (uses Claude Pro subscription) | ~$20-30/year (Anthropic API credits) |
+| **Requirements** | Python 3.8+, Claude Desktop + Pro | Docker & Docker Compose |
+| **Best for** | Personal use, already have Claude Pro | Sharing with household, standalone setup |
 
-## Architecture
+---
 
-```
-┌─────────────────────────────────────────┐
-│         Docker Compose Stack            │
-├─────────────────────────────────────────┤
-│  Grocy (Port 9283)                      │
-│  Backend (Port 8080)                    │
-│  Frontend (Port 3000)                   │
-└─────────────────────────────────────────┘
+## Option 1: Claude Desktop MCP Server
 
-Backend:
-- Node.js + Express + WebSocket
-- MCP Client (connects to Python MCP server)
-- Claude API integration
-- REST API for recipes/pantry
+Use PantryBot as an MCP (Model Context Protocol) server inside the Claude Desktop app. No API costs — runs on your Claude Pro subscription.
 
-Frontend:
-- React 18 + TypeScript
-- Tailwind CSS
-- Zustand state management
-- Real-time WebSocket connection
-```
+### What You Need
 
-## Quick Start
+- **Claude Desktop App** with Pro subscription
+- **Python 3.8+**
+- **Grocy** running locally (see [Grocy Setup](#grocy-setup) below)
+- **Spoonacular API key** (free tier: 150 requests/day)
 
-### Prerequisites
+### Setup
 
-- Docker & Docker Compose
-- Grocy instance (or use the bundled one)
-- Claude API key
-- Spoonacular API key (free tier available)
-
-### Installation
-
-1. **Clone the repository**
+1. **Create Python virtual environment:**
    ```bash
-   cd pantryBot
+   python3 -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
    ```
 
-2. **Create `.env` file**
+2. **Configure environment:**
    ```bash
    cp .env.example .env
+   # Edit .env with your Grocy API URL/key and Spoonacular key
    ```
 
-3. **Edit `.env` with your API keys**
+3. **Add to Claude Desktop config:**
+
+   Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (see `claude_desktop_config.example.json` for reference):
+   ```json
+   {
+     "mcpServers": {
+       "pantrybot": {
+         "command": "/path/to/your/venv/bin/python",
+         "args": ["/path/to/pantrybot_mcp_server.py"],
+         "env": {
+           "GROCY_API_URL": "http://localhost:9283/api",
+           "GROCY_API_KEY": "your_grocy_api_key",
+           "SPOONACULAR_API_KEY": "your_spoonacular_api_key",
+           "RECIPE_DIR": "/path/to/data/recipes"
+         }
+       }
+     }
+   }
+   ```
+
+4. **Restart Claude Desktop** — PantryBot tools will appear automatically.
+
+---
+
+## Option 2: Self-Hosted Web UI (Docker)
+
+A complete containerized setup with a React frontend, Node.js backend, and built-in Grocy instance.
+
+### What You Need
+
+- **Docker & Docker Compose**
+- **Anthropic API key** (buy credits at [console.anthropic.com](https://console.anthropic.com))
+- **Spoonacular API key** (free tier: 150 requests/day)
+
+### Quick Start
+
+1. **Configure environment:**
    ```bash
-   # Grocy
-   GROCY_API_KEY=your_grocy_api_key_here
-
-   # Spoonacular
-   SPOONACULAR_API_KEY=your_spoonacular_api_key_here
-
-   # Claude
-   CLAUDE_API_KEY=your_claude_api_key_here
+   cp .env.example .env
+   # Edit .env and add your API keys
    ```
 
-4. **Start everything**
+2. **Start everything:**
    ```bash
    docker-compose up -d
    ```
 
-5. **Access the app**
-   - **PantryBot UI:** http://localhost:3000
-   - **Grocy:** http://localhost:9283
+3. **Access the apps:**
+   - **PantryBot Web UI:** http://localhost:3002
+   - **Grocy (pantry management):** http://localhost:9283
    - **Backend API:** http://localhost:8080
 
-### First Time Setup
-
-1. Open Grocy at http://localhost:9283
-2. Create your Grocy admin account
-3. Go to Settings → API → Generate API key
-4. Copy the API key into your `.env` file
-5. Restart the backend: `docker-compose restart backend`
-
-## Usage
-
-### Chat Interface
-
-Ask natural questions like:
-- "What can I make for supper?"
-- "Find me salmon recipes"
-- "I bought 3 cans of salmon today"
-- "Show me recipes I can make right now"
-
-The bot will:
-1. Check your pantry inventory
-2. Search for matching recipes
-3. Display recipe cards with match percentages
-4. Show what you're missing (if anything)
-5. Provide full instructions when you choose a recipe
-
-### Recipe Cards
-
-Each recipe card shows:
-- **Professional image** from Spoonacular
-- **Match percentage** - How much you can make with current ingredients
-  - 🟢 Green (80%+): You have almost everything
-  - 🟡 Yellow (50-80%): Some shopping needed
-  - 🔴 Red (<50%): Significant shopping needed
-- **Missing ingredients** - What you need to buy
-- **Cook time & servings**
-
-### Recipe Book
-
-- Save favorite recipes from chat
-- Browse all saved recipes
-- Quick access to full instructions
-- Delete recipes you no longer want
-
-## Development
-
-### Project Structure
+### Architecture
 
 ```
-pantryBot/
-├── backend/                  # Node.js backend
-│   ├── src/
-│   │   ├── mcpClient.ts     # MCP server communication
-│   │   ├── chatHandler.ts   # Claude API + tool calling
-│   │   ├── wsServer.ts      # WebSocket server
-│   │   ├── routes.ts        # REST API endpoints
-│   │   └── index.ts         # Express app
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── Dockerfile
-├── frontend/                 # React frontend
-│   ├── src/
-│   │   ├── components/
-│   │   ├── pages/
-│   │   ├── stores/
-│   │   └── App.tsx
-│   ├── package.json
-│   ├── vite.config.ts
-│   └── Dockerfile
-├── pantrybot_mcp_server.py  # Python MCP server
-├── pantry_tools.py           # Shared tool implementations
-├── requirements.txt          # Python dependencies
-├── docker-compose.yml        # Full stack orchestration
-└── README.md                 # This file
+┌─────────────────┐
+│  React Frontend │ (Port 3002)
+│   (Vite + TS)   │
+└────────┬────────┘
+         │ WebSocket
+┌────────▼────────┐
+│  Node.js Backend│ (Port 8080)
+│   + MCP Client  │──── spawns ───▶ Python MCP Server (stdio)
+└────────┬────────┘
+         │
+    ┌────▼─────┐
+    │  Grocy   │ (Port 9283)
+    │ Database │
+    └──────────┘
 ```
 
-### Running Locally (without Docker)
+### Cost Analysis
 
-**Backend:**
-```bash
-cd backend
-npm install
-cp ../.env .env
-npm run dev
+- **Model:** Claude Haiku 4.5 ($0.25/M input, $1.25/M output tokens)
+- **Per recipe search:** ~$0.02-0.05
+- **$5 API credit** = ~100-250 recipe interactions
+- **Average family:** 10-20 interactions/week = **~$20-30/year**
+
+Current optimizations:
+- Using Haiku instead of Sonnet (12x cheaper)
+- Condensed system prompt (78% reduction)
+- Limited conversation history (last 10 messages)
+- Reduced max output tokens (2048 vs 4096)
+
+### Database Access
+
+The Grocy SQLite database is at:
 ```
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm run dev
+./data/grocy/data/grocy.db
 ```
-
-**MCP Server:**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-python pantrybot_mcp_server.py
-```
-
-### Multi-Architecture Support
-
-All Docker images support multiple architectures:
-- `linux/amd64` - Intel/AMD x64 (most servers, Windows)
-- `linux/arm64` - Apple Silicon, ARM servers
-- `linux/arm/v7` - Raspberry Pi
-
-Build for specific platform:
-```bash
-docker buildx build --platform linux/amd64,linux/arm64 -t pantrybot-backend ./backend
-```
-
-## API Endpoints
-
-### REST API
-
-- `GET /health` - Health check
-- `GET /api/recipes` - List saved recipes
-- `GET /api/recipes/:name` - Get specific recipe
-- `POST /api/recipes` - Save new recipe
-- `GET /api/pantry/summary` - Get pantry summary
-- `GET /api/pantry/:category` - Get pantry by category
-- `GET /api/shopping` - Get shopping list
-- `GET /api/tools` - List available MCP tools
-
-### WebSocket
-
-Connect to `ws://localhost:8080/ws`
-
-**Client → Server:**
-```json
-{
-  "type": "chat",
-  "message": "What can I make for supper?"
-}
-```
-
-**Server → Client:**
-```json
-{
-  "type": "message",
-  "message": {
-    "role": "assistant",
-    "content": "Here are your best options...",
-    "recipes": [...]
-  }
-}
-```
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `GROCY_API_URL` | Grocy API endpoint | `http://grocy/api` |
-| `GROCY_API_KEY` | Grocy API key | Required |
-| `SPOONACULAR_API_KEY` | Spoonacular API key | Required |
-| `CLAUDE_API_KEY` | Claude API key | Required |
-| `CLAUDE_MODEL` | Claude model to use | `claude-sonnet-4-5-20250929` |
-| `PORT` | Backend port | `8080` |
-
-## Troubleshooting
-
-### Backend won't start
-
-**Error:** `CLAUDE_API_KEY is required`
-- Make sure `.env` file exists with valid API key
-
-**Error:** `MCP client not initialized`
-- Check that Python and dependencies are installed
-- Verify `pantrybot_mcp_server.py` exists
-
-### Frontend shows "Disconnected"
-
-- Check backend is running: `docker-compose logs backend`
-- Verify WebSocket connection: Browser dev tools → Network → WS
-
-### No recipes returned
-
-**Error:** `Spoonacular API limit reached`
-- Free tier: 150 requests/day
-- Wait 24 hours or upgrade plan
-
-**Error:** `No matching recipes`
-- Try broader ingredient search
-- Check pantry has items
-
-## Cost Estimates
-
-### Claude API (Backend)
-- **Sonnet 4.5:** ~$3/million input tokens, ~$15/million output tokens
-- **Typical conversation:** $0.10-$0.30
-- **Monthly estimate (daily use):** $5-$10
-
-### Spoonacular API
-- **Free tier:** 150 requests/day (plenty for family use)
-- **Paid:** Starting at $0.004/request
-
-## Tech Stack
-
-**Backend:**
-- Node.js 20 + TypeScript
-- Express + WebSocket (ws)
-- @modelcontextprotocol/sdk
-- Anthropic SDK
-
-**Frontend:**
-- React 18 + TypeScript
-- Vite
-- Tailwind CSS
-- Zustand
-- React Router
-
-**Infrastructure:**
-- Docker + Docker Compose
-- Nginx (frontend)
-- Python 3.11 (MCP server)
-
-## Roadmap
-
-### Phase 1 (Complete)
-- ✅ Backend MCP client
-- ✅ WebSocket chat handler
-- ✅ Express REST API
-- ✅ React frontend scaffolding
-- ✅ Docker compose setup
-
-### Phase 2 (In Progress)
-- [ ] Recipe card component
-- [ ] Recipe carousel
-- [ ] Recipe book page
-- [ ] WebSocket integration
-- [ ] Recipe save/delete
-
-### Phase 3
-- [ ] Settings page with API key inputs
-- [ ] Mobile responsive polish
-- [ ] Error handling & loading states
-- [ ] Toast notifications
-
-### Phase 4
-- [ ] Recipe search/filter
-- [ ] Recipe tags & categorization
-- [ ] Shopping list integration
-- [ ] Dark mode
-
-## Contributing
-
-This is a personal project, but contributions welcome:
-- Report bugs
-- Suggest features
-- Submit pull requests
-- Share your experience
-
-## License
-
-MIT License - Free to use, modify, and share!
-
-## Acknowledgments
-
-- **Grocy** - Self-hosted grocery management
-- **Spoonacular** - Recipe API
-- **Anthropic Claude** - AI intelligence
-- **FastMCP** - Model Context Protocol framework
-- **Built with Claude Code**
 
 ---
 
-**Questions?** Open an issue or check the [technical design document](./PANTRYBOT_CUSTOM_CLIENT_DESIGN.md) for more details.
+## Features
+
+### Pantry Management
+- Check inventory, filter by category
+- Add/remove items from stock
+- Track expiring products
+- Low stock alerts with auto-add to shopping list
+
+### Recipe Discovery
+- Search recipes by ingredients (with match percentage)
+- Search recipes by name
+- Get full recipe instructions
+- Save favorites to Grocy recipe book
+
+### Shopping Lists
+- Add items to shopping list
+- View current shopping list
+- Auto-generate from low stock items
+
+### Household Management
+- Chores — track, create, and complete recurring chores
+- Tasks — manage one-off to-do items
+- Batteries — track charge cycles for household batteries
+
+### Generic API Access
+- Direct Grocy API access for anything not covered by built-in tools
+
+---
+
+## Grocy Setup
+
+If you don't already have Grocy running (the Docker Web UI option includes it automatically):
+
+```bash
+docker run -d \
+  --name grocy \
+  -p 9283:80 \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  -e TZ=America/Chicago \
+  -v grocy-data:/config \
+  linuxserver/grocy:latest
+```
+
+Access Grocy at http://localhost:9283 and grab your API key from **Settings > Manage API keys**.
+
+---
+
+## Spoonacular API
+
+Sign up at [spoonacular.com/food-api](https://spoonacular.com/food-api) for a free API key. The free tier provides 150 requests/day, which is more than enough for typical household use.
+
+---
+
+## Support
+
+Self-hosted, no subscription, no telemetry, no ongoing fees.

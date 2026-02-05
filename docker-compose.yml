@@ -10,7 +10,7 @@ services:
       - PGID=1000
       - TZ=America/Chicago
     volumes:
-      - grocy-data:/config
+      - ./data/grocy:/config
     ports:
       - "9283:80"
     restart: unless-stopped
@@ -55,9 +55,6 @@ services:
     restart: unless-stopped
     networks:
       - pantrybot-network
-
-volumes:
-  grocy-data:
 
 networks:
   pantrybot-network:

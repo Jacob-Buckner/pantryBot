@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "pantrybot": {
+      "command": "/path/to/your/venv/bin/python",
+      "args": ["/path/to/pantrybot_mcp_server.py"],
+      "env": {
+        "GROCY_API_URL": "http://localhost:9283/api",
+        "GROCY_API_KEY": "your_grocy_api_key_here",
+        "SPOONACULAR_API_KEY": "your_spoonacular_api_key_here",
+        "RECIPE_DIR": "/path/to/data/recipes"
+      }
+    }
+  }
+}

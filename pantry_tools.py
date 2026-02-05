@@ -460,9 +460,12 @@ async def get_recipe_details(recipe_id: int) -> Dict[str, Any]:
             recipe = response.json()
 
             # Extract key information
+            # Store full text for display, and just names for product creation
             ingredients = []
+            ingredient_names = []
             for ing in recipe.get("extendedIngredients", []):
-                ingredients.append(ing.get("original", ""))
+                ingredients.append(ing.get("original", ""))  # Full text with quantities
+                ingredient_names.append(ing.get("name", ""))  # Just the ingredient name
 
             instructions = []
             if recipe.get("analyzedInstructions"):
@@ -480,6 +483,7 @@ async def get_recipe_details(recipe_id: int) -> Dict[str, Any]:
                 "servings": recipe.get("servings"),
                 "ready_in_minutes": recipe.get("readyInMinutes"),
                 "ingredients": ingredients,
+                "ingredient_names": ingredient_names,
                 "instructions": instructions,
                 "source_url": recipe.get("sourceUrl")
             }
@@ -586,12 +590,17 @@ async def save_recipe_to_grocy(
     servings: int = 4,
     ready_in_minutes: int = 30,
     ingredients: list = None,
+    ingredient_names: list = None,
     instructions: list = None,
     image_url: str = None
 ) -> Dict[str, Any]:
     """
     Save a Spoonacular recipe to Grocy's recipe system with full integration.
     Auto-creates missing products at 0 quantity for shopping list integration.
+
+    Args:
+        ingredients: Full ingredient text with quantities (e.g., "3/4 cup beef broth") for display
+        ingredient_names: Just ingredient names (e.g., "beef broth") for product creation
     """
     if not GROCY_API_KEY:
         return {"success": False, "error": "Grocy API key not configured"}
@@ -634,21 +643,25 @@ async def save_recipe_to_grocy(
             logger.info(f"✅ Created recipe in Grocy (ID: {grocy_recipe_id})")
 
             # 2. Process ingredients and create missing products
+            # Use ingredient_names (just names) for product creation, but store full ingredients in notes
             created_products = []
-            if ingredients:
-                for idx, ingredient in enumerate(ingredients):
-                    # Try to find existing product
-                    product_search = await find_product_id_by_name(ingredient)
+            if ingredient_names:
+                for idx, ingredient_name in enumerate(ingredient_names):
+                    # Get full ingredient text for notes (if available)
+                    full_ingredient_text = ingredients[idx] if ingredients and idx < len(ingredients) else ingredient_name
+
+                    # Try to find existing product using just the name
+                    product_search = await find_product_id_by_name(ingredient_name)
 
                     if not product_search.get("found"):
-                        # Product doesn't exist - create it at 0 quantity
-                        logger.info(f"🆕 Creating missing product: {ingredient}")
-                        create_result = await create_product(ingredient, location="Pantry", quantity_unit="piece")
+                        # Product doesn't exist - create it at 0 quantity using just the name
+                        logger.info(f"🆕 Creating missing product: {ingredient_name}")
+                        create_result = await create_product(ingredient_name, location="Pantry", quantity_unit="piece")
 
                         if create_result.get("success"):
-                            created_products.append(ingredient)
+                            created_products.append(ingredient_name)
                             # Re-search to get the new product ID
-                            product_search = await find_product_id_by_name(ingredient)
+                            product_search = await find_product_id_by_name(ingredient_name)
 
                     # Add ingredient to recipe (if we have a product ID)
                     if product_search.get("found"):
@@ -659,7 +672,7 @@ async def save_recipe_to_grocy(
                             "recipe_id": grocy_recipe_id,
                             "product_id": product_id,
                             "amount": 1,  # Default amount (Grocy uses generic units)
-                            "note": ingredient,  # Store original ingredient text
+                            "note": full_ingredient_text,  # Store full ingredient text with quantities
                             "ingredient_group": "",
                             "product_group": idx + 1  # Position in recipe
                         }
@@ -672,13 +685,13 @@ async def save_recipe_to_grocy(
                                 timeout=10.0
                             )
                             if pos_response.status_code >= 400:
-                                logger.error(f"❌ Failed to link ingredient '{ingredient}': HTTP {pos_response.status_code} - {pos_response.text}")
+                                logger.error(f"❌ Failed to link ingredient '{ingredient_name}': HTTP {pos_response.status_code} - {pos_response.text}")
                             else:
-                                logger.info(f"✅ Linked ingredient: {ingredient}")
+                                logger.info(f"✅ Linked ingredient: {ingredient_name}")
                         except Exception as e:
-                            logger.error(f"❌ Error linking ingredient '{ingredient}': {str(e)}")
+                            logger.error(f"❌ Error linking ingredient '{ingredient_name}': {str(e)}")
 
-            logger.info(f"✅ Recipe saved to Grocy with {len(ingredients or [])} ingredients")
+            logger.info(f"✅ Recipe saved to Grocy with {len(ingredient_names or [])} ingredients")
             if created_products:
                 logger.info(f"🆕 Created {len(created_products)} new products: {', '.join(created_products)}")
 
@@ -687,7 +700,7 @@ async def save_recipe_to_grocy(
                 "message": f"Recipe '{recipe_title}' saved to Grocy",
                 "grocy_recipe_id": grocy_recipe_id,
                 "created_products": created_products,
-                "total_ingredients": len(ingredients or [])
+                "total_ingredients": len(ingredient_names or [])
             }
 
         except Exception as e:

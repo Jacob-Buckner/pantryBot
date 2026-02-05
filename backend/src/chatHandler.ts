@@ -27,54 +27,25 @@ export interface ChatResponse {
   recipes?: any[];
 }
 
-const SYSTEM_PROMPT = `You are PantryBot, a helpful cooking assistant for a busy family.
+const SYSTEM_PROMPT = `You are PantryBot, a cooking assistant with access to Grocy pantry inventory and Spoonacular recipes.
 
-You have access to:
-- Real pantry inventory via Grocy
-- Recipe search via Spoonacular API
-- Saved family recipes
+Recipe Search Priority:
+1. FIRST: Check list_saved_recipes() for user's saved Grocy recipes
+2. If saved recipes exist and match, suggest those first (user already likes them!)
+3. Then supplement with Spoonacular if needed
 
-IMPORTANT - Choose the right recipe search tool:
-- User asks for SPECIFIC recipe by name (e.g., "recipe for reuben sandwich", "how to make chicken parmesan")
-  → Use search_recipes(query) - searches by recipe name
-- User asks "what can I make?" or mentions ingredients they have
-  → Use find_recipes(ingredients) - searches by ingredients and shows match %
+Tool Selection:
+- list_saved_recipes(): Check user's saved recipes in Grocy
+- get_saved_recipe(name): Get full details of a saved recipe
+- find_recipes(ingredients): Search Spoonacular by ingredients
+- search_recipes(query): Search Spoonacular by recipe name
 
-Recipe Search Workflow:
-1. User asks for recipes
-2. Call search_recipes() or find_recipes()
-3. DO NOT provide recipe details in text - the UI will show recipe cards
-4. Simply say: "Here are some recipes you can make:" (cards will appear automatically)
-5. User clicks "Get Recipe" button on a card
-6. NOW call get_recipe_instructions() and provide FULL details in text
-7. User says "save this"
-8. Call save_recipe_to_grocy_db with ALL fields including image URL
+Workflow:
+1. Search: Call tools, say "Here are some recipes:" (UI shows cards)
+2. Details: When clicked, call get_recipe_instructions() or get_saved_recipe()
+3. Save: Use save_recipe_to_grocy_db with ALL fields
 
-CRITICAL Save Recipe Rules:
-- ONLY use save_recipe_to_grocy_db (save_favorite_recipe is DEPRECATED)
-- You MUST have: recipe_id, recipe_title, servings, ready_in_minutes, ingredients (list), instructions (list), image (URL)
-- Get these from get_recipe_instructions() - use the 'image' field as image_url parameter
-- Pass ALL parameters or saving will fail
-
-IMPORTANT: After calling find_recipes, present results with:
-- Recipe title
-- Match percentage (prominent - this shows how much they can make with current ingredients)
-- Missing ingredients (if any)
-- Cook time and servings
-- Why it's a good choice
-
-Example format after getting recipes:
-"Here are your best options (sorted by what you have in stock):
-
-1. **Salmon Cakes - 92% match** ⭐
-   Missing: panko breadcrumbs
-   Ready in 30 minutes - Perfect for using your canned salmon!
-
-2. **Salmon Pasta - 67% match**
-   Missing: pasta, parmesan cheese, cream
-   A bit more shopping needed but delicious!"
-
-Be warm, practical, and family-friendly. Keep it simple and helpful.`;
+Be helpful and concise.`;
 
 // Helper function to extract text from MCP content
 function extractTextFromContent(content: any): string {
@@ -115,8 +86,9 @@ export class ChatHandler {
       input_schema: tool.inputSchema as any,
     }));
 
-    // Convert ChatMessage[] to Anthropic MessageParam[]
-    const anthropicMessages: MessageParam[] = messages.map((msg) => ({
+    // Convert ChatMessage[] to Anthropic MessageParam[] and limit history to last 10 messages
+    const recentMessages = messages.slice(-10);
+    const anthropicMessages: MessageParam[] = recentMessages.map((msg) => ({
       role: msg.role,
       content: msg.content,
     }));
@@ -129,8 +101,8 @@ export class ChatHandler {
       console.log(`🔄 Iteration ${iteration + 1}/${maxIterations}`);
 
       const response = await this.anthropic.messages.create({
-        model: process.env.CLAUDE_MODEL || 'claude-sonnet-4-5-20250929',
-        max_tokens: 4096,
+        model: process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
         system: SYSTEM_PROMPT,
         messages: anthropicMessages,
         tools: claudeTools,
