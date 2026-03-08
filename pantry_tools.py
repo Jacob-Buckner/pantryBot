@@ -151,15 +151,18 @@ async def find_product_id_by_name(product_name: str) -> Dict[str, Any]:
                         "id": product.get("id"),
                         "name": name
                     })
-
+     
             if matches:
-                return {"found": True, "matches": matches}
+                return {
+                    "found": True,
+                    "matches": matches,
+                    "summary": f"Found {len(matches)} product(s) matching '{product_name}': {', '.join([m['name'] for m in matches])}"
+                }
             else:
                 return {"found": False, "message": f"No product found matching '{product_name}'"}
 
         except Exception as e:
             return {"error": f"Failed to search for product: {str(e)}"}
-
 
 async def consume_stock(product_name: str, amount: float, spoiled: bool = False) -> Dict[str, Any]:
     """Consume/remove stock from Grocy inventory"""
@@ -347,10 +350,20 @@ async def get_shopping_list() -> Dict[str, Any]:
             response.raise_for_status()
             shopping_list = response.json()
 
+            # Fetch all products once for name lookup
+            products_response = await client.get(
+                f"{GROCY_API_URL}/objects/products",
+                headers=get_grocy_headers(),
+                timeout=10.0
+            )
+            products_response.raise_for_status()
+            products = {str(p["id"]): p["name"] for p in products_response.json()}
+
             items = []
             for item in shopping_list:
+                product_id = str(item.get("product_id"))
                 items.append({
-                    "product_id": item.get("product_id"),
+                    "product_name": products.get(product_id, f"Unknown (ID: {product_id})"),
                     "amount": item.get("amount"),
                     "note": item.get("note", "")
                 })
@@ -369,7 +382,6 @@ async def get_shopping_list() -> Dict[str, Any]:
                 "success": False,
                 "error": f"Failed to get shopping list: {str(e)}"
             }
-
 
 # ============================================================================
 # RECIPE TOOLS
