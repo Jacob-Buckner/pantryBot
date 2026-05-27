@@ -9,6 +9,7 @@ from typing import Dict, Any
 from datetime import datetime
 from pathlib import Path
 
+import difflib
 import httpx
 from dotenv import load_dotenv
 
@@ -34,6 +35,35 @@ def get_grocy_headers() -> dict:
     if GROCY_API_KEY:
         headers["GROCY-API-KEY"] = GROCY_API_KEY
     return headers
+
+
+def _fuzzy_product_match(query: str, name: str, threshold: float = 0.6) -> bool:
+    """Return True if query fuzzy-matches a product name.
+
+    Handles: bidirectional substring, common plural/singular forms, and
+    character-level similarity via difflib (covers typos, abbreviations).
+    """
+    q, n = query.lower().strip(), name.lower().strip()
+
+    if q in n or n in q:
+        return True
+
+    def _stem(s: str) -> str:
+        if s.endswith("ies"):
+            return s[:-3] + "y"
+        if s.endswith("ves"):
+            return s[:-3] + "f"
+        if s.endswith("es"):
+            return s[:-2]
+        if s.endswith("s"):
+            return s[:-1]
+        return s
+
+    qs, ns = _stem(q), _stem(n)
+    if qs == ns or qs in ns or ns in qs:
+        return True
+
+    return difflib.SequenceMatcher(None, q, n).ratio() >= threshold
 
 
 # ============================================================================
@@ -111,7 +141,7 @@ async def get_product_info(product_name: str) -> Dict[str, Any]:
                 product = item.get("product", {})
                 name = product.get("name", "")
 
-                if product_name.lower() in name.lower():
+                if _fuzzy_product_match(product_name, name):
                     matches.append({
                         "name": name,
                         "amount": float(item.get("amount_aggregated", 0)),
@@ -146,7 +176,7 @@ async def find_product_id_by_name(product_name: str) -> Dict[str, Any]:
             matches = []
             for product in products:
                 name = product.get("name", "")
-                if product_name.lower() in name.lower():
+                if _fuzzy_product_match(product_name, name):
                     matches.append({
                         "id": product.get("id"),
                         "name": name
