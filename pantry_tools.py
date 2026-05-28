@@ -22,7 +22,6 @@ logger = logging.getLogger("pantrybot")
 # Configuration
 GROCY_API_URL = os.getenv("GROCY_API_URL", "http://192.168.0.83:9283/api")
 GROCY_API_KEY = os.getenv("GROCY_API_KEY", "")
-SPOONACULAR_API_KEY = os.getenv("SPOONACULAR_API_KEY", "")
 RECIPE_DIR = Path(os.getenv("RECIPE_DIR", "/app/recipes"))
 
 # Ensure recipe directory exists
@@ -417,183 +416,6 @@ async def get_shopping_list() -> Dict[str, Any]:
 # RECIPE TOOLS
 # ============================================================================
 
-async def search_recipes_by_ingredients(ingredients: str, number: int = 5) -> Dict[str, Any]:
-    """Search for recipes using available ingredients via Spoonacular API"""
-    if not SPOONACULAR_API_KEY:
-        return {"error": "Spoonacular API key not configured"}
-
-    logger.info(f"🔍 Searching Spoonacular for recipes with: {ingredients}")
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(
-                "https://api.spoonacular.com/recipes/findByIngredients",
-                params={
-                    "apiKey": SPOONACULAR_API_KEY,
-                    "ingredients": ingredients,
-                    "number": number,
-                    "ranking": 2,  # Maximize used ingredients
-                    "ignorePantry": False
-                },
-                timeout=10.0
-            )
-            response.raise_for_status()
-            recipes = response.json()
-
-            # Simplify the response and calculate match percentage
-            simplified = []
-            for recipe in recipes:
-                used_count = len(recipe.get("usedIngredients", []))
-                missed_count = len(recipe.get("missedIngredients", []))
-                total_ingredients = used_count + missed_count
-
-                # Calculate match percentage
-                match_percentage = round((used_count / total_ingredients * 100) if total_ingredients > 0 else 0, 1)
-
-                # Get names of missing ingredients
-                missed_items = [ing.get("name") for ing in recipe.get("missedIngredients", [])]
-
-                simplified.append({
-                    "id": recipe.get("id"),
-                    "title": recipe.get("title"),
-                    "image": recipe.get("image"),
-                    "usedIngredients": used_count,
-                    "matchPercentage": match_percentage,
-                    "missedIngredients": missed_items
-                })
-
-            # Sort by match percentage (highest first)
-            simplified.sort(key=lambda x: x["matchPercentage"], reverse=True)
-
-            logger.info(f"✅ Found {len(simplified)} recipes from Spoonacular (sorted by match %)")
-
-            return {
-                "success": True,
-                "total_recipes": len(simplified),
-                "recipes": simplified
-            }
-
-        except Exception as e:
-            logger.error(f"❌ Spoonacular search failed: {str(e)}")
-            return {
-                "success": False,
-                "error": f"Failed to search recipes: {str(e)}"
-            }
-
-
-async def get_recipe_details(recipe_id: int) -> Dict[str, Any]:
-    """Get full recipe details including instructions from Spoonacular"""
-    if not SPOONACULAR_API_KEY:
-        return {"error": "Spoonacular API key not configured"}
-
-    logger.info(f"📖 Getting recipe details for ID: {recipe_id}")
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(
-                f"https://api.spoonacular.com/recipes/{recipe_id}/information",
-                params={
-                    "apiKey": SPOONACULAR_API_KEY,
-                    "includeNutrition": False
-                },
-                timeout=10.0
-            )
-            response.raise_for_status()
-            recipe = response.json()
-
-            # Extract key information
-            # Store full text for display, and just names for product creation
-            ingredients = []
-            ingredient_names = []
-            for ing in recipe.get("extendedIngredients", []):
-                ingredients.append(ing.get("original", ""))  # Full text with quantities
-                ingredient_names.append(ing.get("name", ""))  # Just the ingredient name
-
-            instructions = []
-            if recipe.get("analyzedInstructions"):
-                for step in recipe["analyzedInstructions"][0].get("steps", []):
-                    instructions.append(f"{step.get('number')}. {step.get('step')}")
-            elif recipe.get("instructions"):
-                instructions = [recipe.get("instructions")]
-
-            logger.info(f"✅ Retrieved recipe: {recipe.get('title')} ({len(ingredients)} ingredients, {len(instructions)} steps)")
-
-            return {
-                "success": True,
-                "title": recipe.get("title"),
-                "image": recipe.get("image"),
-                "servings": recipe.get("servings"),
-                "ready_in_minutes": recipe.get("readyInMinutes"),
-                "ingredients": ingredients,
-                "ingredient_names": ingredient_names,
-                "instructions": instructions,
-                "source_url": recipe.get("sourceUrl")
-            }
-
-        except Exception as e:
-            logger.error(f"❌ Failed to get recipe details: {str(e)}")
-            return {
-                "success": False,
-                "error": f"Failed to get recipe details: {str(e)}"
-            }
-
-
-async def search_recipes_by_name(query: str, number: int = 5) -> Dict[str, Any]:
-    """Search for recipes by name/query via Spoonacular API"""
-    if not SPOONACULAR_API_KEY:
-        return {"error": "Spoonacular API key not configured"}
-
-    logger.info(f"🔍 Searching Spoonacular for recipe: '{query}'")
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(
-                "https://api.spoonacular.com/recipes/complexSearch",
-                params={
-                    "apiKey": SPOONACULAR_API_KEY,
-                    "query": query,
-                    "number": number,
-                    "addRecipeInformation": True,
-                    "fillIngredients": True,
-                    "instructionsRequired": True
-                },
-                timeout=10.0
-            )
-            response.raise_for_status()
-            data = response.json()
-            recipes = data.get("results", [])
-
-            # Simplify the response - format compatible with find_recipes for consistent UI
-            simplified = []
-            for recipe in recipes:
-                simplified.append({
-                    "id": recipe.get("id"),
-                    "title": recipe.get("title"),
-                    "image": recipe.get("image"),
-                    "readyInMinutes": recipe.get("readyInMinutes"),
-                    "servings": recipe.get("servings"),
-                    # Add fields for frontend compatibility (no pantry comparison for name search)
-                    "matchPercentage": 100,  # Name search means exact match
-                    "usedIngredients": 0,  # Not comparing to pantry
-                    "missedIngredients": []  # Unknown without pantry check
-                })
-
-            logger.info(f"✅ Found {len(simplified)} recipes for '{query}'")
-
-            return {
-                "success": True,
-                "total_recipes": len(simplified),
-                "recipes": simplified
-            }
-
-        except Exception as e:
-            logger.error(f"❌ Recipe name search failed: {str(e)}")
-            return {
-                "success": False,
-                "error": f"Failed to search recipes: {str(e)}"
-            }
-
-
 async def save_recipe(recipe_name: str, recipe_content: str) -> Dict[str, Any]:
     """Save a recipe to filesystem"""
     safe_name = recipe_name.lower().replace(" ", "_").replace("/", "_")
@@ -637,7 +459,7 @@ async def save_recipe_to_grocy(
     image_url: str = None
 ) -> Dict[str, Any]:
     """
-    Save a Spoonacular recipe to Grocy's recipe system with full integration.
+    Save a recipe to Grocy's recipe system with full integration.
     Auto-creates missing products at 0 quantity for shopping list integration.
 
     Args:
@@ -654,7 +476,7 @@ async def save_recipe_to_grocy(
             # 1. Create the recipe in Grocy
             recipe_data = {
                 "name": recipe_title,
-                "description": f"From Spoonacular (ID: {recipe_id})\nCook time: {ready_in_minutes} min\nServings: {servings}",
+                "description": f"Recipe ID: {recipe_id}\nCook time: {ready_in_minutes} min\nServings: {servings}",
                 "base_servings": servings,
                 "desired_servings": servings,
                 "type": "normal"
@@ -763,12 +585,12 @@ async def get_grocy_recipes() -> Dict[str, Any]:
                 timeout=10.0
             )
             response.raise_for_status()
-            recipes = response.json()
+            recipes = response.json() or []
 
             # Extract image URLs from descriptions
             simplified = []
             for recipe in recipes:
-                description = recipe.get("description", "")
+                description = recipe.get("description") or ""
 
                 # Extract image URL if present
                 image_url = None

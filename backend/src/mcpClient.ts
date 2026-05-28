@@ -32,7 +32,6 @@ export class PantryBotMCPClient {
       env: {
         GROCY_API_URL: process.env.GROCY_API_URL || '',
         GROCY_API_KEY: process.env.GROCY_API_KEY || '',
-        SPOONACULAR_API_KEY: process.env.SPOONACULAR_API_KEY || '',
         RECIPE_DIR: '/app/recipes',
       },
     });

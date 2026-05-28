@@ -3,8 +3,7 @@
 PantryBot MCP Server
 A True Model Context Protocol server for intelligent pantry management and meal planning.
 
-Combines Grocy (pantry inventory) + Spoonacular (recipes) + Claude AI
-for complete pantry-to-plate assistance.
+Combines Grocy (pantry inventory) + Claude AI for complete pantry-to-plate assistance.
 
 Usage with Claude Desktop:
   Add to your claude_desktop_config.json:
@@ -32,9 +31,6 @@ from pantry_tools import (
     add_stock,
     add_to_shopping_list,
     get_shopping_list,
-    search_recipes_by_ingredients,
-    search_recipes_by_name,
-    get_recipe_details,
     save_recipe,
     save_recipe_to_grocy,
     get_recipe,
@@ -183,96 +179,6 @@ async def view_shopping_list() -> dict:
 # ============================================================================
 
 @mcp.tool()
-async def find_recipes(ingredients: str, number: int = 5) -> dict:
-    """
-    Search for recipes using available ingredients via Spoonacular API.
-    Returns recipe suggestions with match percentages showing how much you can make with current pantry.
-
-    Args:
-        ingredients: Comma-separated list of ingredients (e.g., 'salmon,lemon,dill')
-        number: Number of recipes to return (default: 5, max: 10)
-
-    Returns:
-        Dictionary with:
-            - success: bool
-            - total_recipes: int
-            - recipes: list of recipes sorted by match percentage (highest first)
-                Each recipe includes:
-                - id: Recipe ID for get_recipe_instructions
-                - title: Recipe name
-                - match_percentage: % of ingredients you have
-                - missed_items: List of ingredients you need to buy
-                - used_ingredients: Count of ingredients you have
-                - missed_ingredients: Count of ingredients you need
-
-    Example:
-        "What can I make with salmon and rice?"
-        → find_recipes("salmon,rice")
-    """
-    return await search_recipes_by_ingredients(ingredients, min(number, 10))
-
-
-@mcp.tool()
-async def search_recipes(query: str, number: int = 5) -> dict:
-    """
-    Search for recipes by name or description via Spoonacular API.
-    Use this when the user asks for a specific recipe by name (e.g., "reuben sandwich", "chicken parmesan").
-
-    Args:
-        query: Recipe name or search query (e.g., "reuben sandwich", "chocolate cake")
-        number: Number of recipes to return (default: 5, max: 10)
-
-    Returns:
-        Dictionary with:
-            - success: bool
-            - total_recipes: int
-            - recipes: list of matching recipes
-                Each recipe includes:
-                - id: Recipe ID for get_recipe_instructions
-                - title: Recipe name
-                - image: Recipe image URL
-                - readyInMinutes: Cooking time
-                - servings: Number of servings
-                - summary: Brief description
-
-    Example:
-        "Can I have a recipe for reuben sandwiches?"
-        → search_recipes("reuben sandwich")
-
-    Note: This searches by recipe NAME. To search by ingredients you have,
-          use find_recipes instead.
-    """
-    return await search_recipes_by_name(query, min(number, 10))
-
-
-@mcp.tool()
-async def get_recipe_instructions(recipe_id: int) -> dict:
-    """
-    Get full recipe details including ingredients and step-by-step instructions.
-    Use this after find_recipes to get complete cooking instructions.
-
-    Args:
-        recipe_id: The Spoonacular recipe ID from find_recipes results
-
-    Returns:
-        Dictionary with:
-            - success: bool
-            - title: Recipe name
-            - image: Spoonacular image URL (IMPORTANT: use this when saving!)
-            - servings: Number of servings
-            - ready_in_minutes: Cooking time
-            - ingredients: Full ingredient list
-            - instructions: Step-by-step cooking instructions
-            - source_url: Original recipe URL
-
-    Example:
-        After finding recipe ID 663050:
-        → get_recipe_instructions(663050)
-    """
-    return await get_recipe_details(recipe_id)
-
-
-@mcp.tool()
 async def save_recipe_to_grocy_db(
     recipe_id: int,
     recipe_title: str,
@@ -284,25 +190,24 @@ async def save_recipe_to_grocy_db(
     image_url: str = None
 ) -> dict:
     """
-    Save a Spoonacular recipe to Grocy's recipe database with full pantry integration.
+    Save a recipe to Grocy's recipe database with full pantry integration.
     This is the PREFERRED way to save recipes - keeps everything in Grocy!
 
     Features:
     - Saves recipe to Grocy's recipe system (not just filesystem)
     - Auto-creates missing products at 0 quantity
     - Links ingredients to pantry products
-    - Stores Spoonacular image URL for display
     - Enables shopping list integration
 
     Args:
-        recipe_id: Spoonacular recipe ID
+        recipe_id: Recipe ID
         recipe_title: Recipe name
         servings: Number of servings
         ready_in_minutes: Cook time in minutes
         ingredients: List of full ingredient strings with quantities (e.g., "3/4 cup beef broth")
         ingredient_names: List of just ingredient names (e.g., "beef broth") for product creation
         instructions: List of instruction steps
-        image_url: Spoonacular image URL (optional)
+        image_url: Image URL (optional)
 
     Returns:
         Dictionary with:
@@ -313,11 +218,8 @@ async def save_recipe_to_grocy_db(
 
     Example workflow:
         User: "Save this reuben sandwich recipe"
-        1. get_recipe_instructions(recipe_id) → returns {title, image, servings, ready_in_minutes, ingredients, ingredient_names, instructions}
-        2. save_recipe_to_grocy_db(recipe_id, title, servings, ready_in_minutes, ingredients, ingredient_names, instructions, image)
+        → save_recipe_to_grocy_db(recipe_id, title, servings, ready_in_minutes, ingredients, ingredient_names, instructions, image_url)
         → IMPORTANT: Pass BOTH 'ingredients' (full text) AND 'ingredient_names' (just names)!
-        → IMPORTANT: Pass the 'image' field from step 1 as image_url parameter!
-        → Saves to Grocy with auto-created products and Spoonacular image
     """
     return await save_recipe_to_grocy(
         recipe_id=recipe_id,
@@ -365,8 +267,7 @@ async def list_saved_recipes() -> dict:
     List all saved recipes from Grocy database.
 
     IMPORTANT: When user asks "what's for supper?" or "what can I make?",
-    check saved recipes FIRST before searching Spoonacular. These are recipes
-    the user has already saved and likes!
+    check saved recipes FIRST. These are recipes the user has already saved and likes!
 
     Returns:
         Dictionary with:
@@ -378,7 +279,6 @@ async def list_saved_recipes() -> dict:
         User: "What's for supper?"
         1. list_saved_recipes() → check user's saved Grocy recipes
         2. Match against get_pantry() to see what they can make
-        3. If no good matches, then search Spoonacular
     """
     return await get_grocy_recipes()
 

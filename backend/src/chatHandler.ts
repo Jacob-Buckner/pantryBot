@@ -27,18 +27,15 @@ export interface ChatResponse {
   recipes?: any[];
 }
 
-const SYSTEM_PROMPT = `You are PantryBot, a cooking assistant with access to Grocy pantry inventory and Spoonacular recipes.
+const SYSTEM_PROMPT = `You are PantryBot, a cooking assistant with access to Grocy pantry inventory and recipes.
 
 Recipe Search Priority:
 1. FIRST: Check list_saved_recipes() for user's saved Grocy recipes
 2. If saved recipes exist and match, suggest those first (user already likes them!)
-3. Then supplement with Spoonacular if needed
 
 Tool Selection:
 - list_saved_recipes(): Check user's saved recipes in Grocy
 - get_saved_recipe(name): Get full details of a saved recipe
-- find_recipes(ingredients): Search Spoonacular by ingredients
-- search_recipes(query): Search Spoonacular by recipe name
 
 Workflow:
 1. Search: Call tools, say "Here are some recipes:" (UI shows cards)

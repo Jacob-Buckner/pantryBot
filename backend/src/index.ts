@@ -64,10 +64,6 @@ async function startServer() {
       console.warn('⚠️ GROCY_API_URL not set');
     }
 
-    if (!process.env.SPOONACULAR_API_KEY) {
-      console.warn('⚠️ SPOONACULAR_API_KEY not set');
-    }
-
     // Initialize MCP client (connects to Python MCP server)
     console.log('🔧 Starting PantryBot Backend...');
     await getMCPClient();
