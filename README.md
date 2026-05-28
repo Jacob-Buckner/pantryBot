@@ -1,6 +1,6 @@
 # PantryBot
 
-**AI-powered pantry management using [Grocy](https://grocy.info/) and [Spoonacular](https://spoonacular.com/food-api)**
+**AI-powered pantry management using [Grocy](https://grocy.info/)**
 
 PantryBot lets you manage your household pantry, discover recipes based on what you have, track chores and tasks, and more — all through natural language conversation with Claude.
 
@@ -24,7 +24,6 @@ Use PantryBot as an MCP (Model Context Protocol) server inside the Claude Deskto
 - **Claude Desktop App** with Pro subscription
 - **Python 3.8+**
 - **Grocy** running locally (see [Grocy Setup](#grocy-setup) below)
-- **Spoonacular API key** (free tier: 150 requests/day)
 
 ### Setup
 
@@ -38,7 +37,7 @@ Use PantryBot as an MCP (Model Context Protocol) server inside the Claude Deskto
 2. **Configure environment:**
    ```bash
    cp .env.example .env
-   # Edit .env with your Grocy API URL/key and Spoonacular key
+   # Edit .env with your Grocy API URL and key
    ```
 
 3. **Add to Claude Desktop config:**
@@ -53,7 +52,6 @@ Use PantryBot as an MCP (Model Context Protocol) server inside the Claude Deskto
          "env": {
            "GROCY_API_URL": "http://localhost:9283/api",
            "GROCY_API_KEY": "your_grocy_api_key",
-           "SPOONACULAR_API_KEY": "your_spoonacular_api_key",
            "RECIPE_DIR": "/path/to/data/recipes"
          }
        }
@@ -73,7 +71,6 @@ A complete containerized setup with a React frontend, Node.js backend, and built
 
 - **Docker & Docker Compose**
 - **Anthropic API key** (buy credits at [console.anthropic.com](https://console.anthropic.com))
-- **Spoonacular API key** (free tier: 150 requests/day)
 
 ### Quick Start
 
@@ -143,10 +140,9 @@ The Grocy SQLite database is at:
 - Low stock alerts with auto-add to shopping list
 
 ### Recipe Discovery
-- Search recipes by ingredients (with match percentage)
-- Search recipes by name
-- Get full recipe instructions
-- Save favorites to Grocy recipe book
+- Browse and retrieve recipes saved in Grocy
+- Save recipes to Grocy with full ingredient and instruction details
+- Auto-creates missing pantry products when saving a recipe
 
 ### Shopping Lists
 - Add items to shopping list
@@ -179,12 +175,6 @@ docker run -d \
 ```
 
 Access Grocy at http://localhost:9283 and grab your API key from **Settings > Manage API keys**.
-
----
-
-## Spoonacular API
-
-Sign up at [spoonacular.com/food-api](https://spoonacular.com/food-api) for a free API key. The free tier provides 150 requests/day, which is more than enough for typical household use.
 
 ---
 

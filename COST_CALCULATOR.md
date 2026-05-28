@@ -70,36 +70,13 @@ Total: ~$0.01 per complete recipe interaction
 
 **Savings vs average subscription: ~$40-55/year**
 
-## Spoonacular API (Recipe Search)
-
-| Tier | Cost | Requests/Day | Requests/Month |
-|------|------|--------------|----------------|
-| Free | $0 | 150 | 4,500 |
-| Basic | $19/month | 1,500 | 45,000 |
-
-**Typical PantryBot usage:**
-- 2-5 Spoonacular requests per recipe search
-- ~10 searches/week = 40/month = ~160 API calls
-- **Free tier easily covers most families**
-
 ## Total Cost of Ownership (Annual)
 
-### Conservative Estimate
 ```
 Claude API:          $5/year
-Spoonacular:         $0/year (free tier)
 Docker/Hosting:      $0/year (self-hosted)
 ──────────────────────────────
 Total:               $5/year
-```
-
-### If You Exceed Free Tiers
-```
-Claude API:          $10/year
-Spoonacular Basic:   $228/year (if >150 req/day)
-──────────────────────────────
-Total:               $238/year
-(Still less than Yummly alone!)
 ```
 
 ## Current Optimizations ✅

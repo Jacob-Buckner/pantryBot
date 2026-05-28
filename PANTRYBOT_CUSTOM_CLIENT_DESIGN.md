@@ -23,7 +23,6 @@
 │                           │                                   │
 │                           ├─── MCP Server (stdio)            │
 │                           ├─── Grocy API (HTTP)              │
-│                           ├─── Spoonacular API (HTTP)        │
 │                           └─── Claude API (HTTP)             │
 │                                                               │
 └─────────────────────────────────────────────────────────────┘
@@ -47,7 +46,7 @@
 - **WebSocket:** ws library
 - **MCP Client:** @modelcontextprotocol/sdk
 - **Process Management:** node-pty for MCP server stdio communication
-- **API Clients:** axios for Grocy/Spoonacular/Claude
+- **API Clients:** axios for Grocy/Claude
 - **Environment:** dotenv for configuration
 
 ### Deployment
@@ -80,7 +79,7 @@ App
 │           │   │   └── RecipeCard (saved favorites)
 │           │   └── RecipeDetail (modal/drawer)
 │           ├── SettingsPage
-│           │   ├── ApiKeyInput (Claude, Spoonacular)
+│           │   ├── ApiKeyInput (Claude)
 │           │   ├── GrocyConnection
 │           │   └── Preferences (theme, notifications)
 │           └── GrocyPage
@@ -114,7 +113,6 @@ interface RecipeStore {
 // stores/settingsStore.ts
 interface SettingsStore {
   claudeApiKey: string;
-  spoonacularApiKey: string;
   grocyUrl: string;
   grocyApiKey: string;
 
@@ -143,7 +141,7 @@ interface RecipeCardProps {
 }
 
 // Features:
-// - Display Spoonacular recipe image
+// - Display recipe image
 // - Prominent match % badge (color-coded: green >80%, yellow 50-80%, red <50%)
 // - Quick glance info: cook time, servings
 // - "Missing items" expandable section
@@ -196,7 +194,7 @@ The backend acts as a bridge between the frontend and the MCP server, handling:
 1. WebSocket connections for real-time chat
 2. stdio communication with MCP server
 3. Claude API calls with tool orchestration
-4. Direct API calls to Grocy/Spoonacular when needed
+4. Direct API calls to Grocy when needed
 
 ```typescript
 // server/mcpClient.ts
@@ -215,7 +213,6 @@ class PantryBotMCPClient {
       env: {
         GROCY_API_URL: process.env.GROCY_API_URL,
         GROCY_API_KEY: process.env.GROCY_API_KEY,
-        SPOONACULAR_API_KEY: process.env.SPOONACULAR_API_KEY,
         RECIPE_DIR: '/app/recipes'
       }
     });
@@ -362,22 +359,12 @@ class ChatHandler {
 
 You have access to:
 - Real pantry inventory via Grocy
-- Recipe search via Spoonacular API
-- Saved family recipes
+- Saved family recipes in Grocy
 
 When asked for meal suggestions:
-1. Check pantry with get_pantry
-2. Search recipes with find_recipes (use 3-5 key ingredients)
-3. Present options sorted by match % (best first)
-4. When user chooses, get full recipe with get_recipe_instructions
-5. Offer to save favorites
-
-IMPORTANT: After calling find_recipes, present results with:
-- Recipe title
-- Match percentage (prominent)
-- Missing ingredients (if any)
-- Cook time and servings
-- Why it's a good choice
+1. Check saved recipes with list_saved_recipes
+2. Match against pantry with get_pantry
+3. Suggest recipes the user already has ingredients for
 
 Be warm, practical, and family-friendly.`;
   }
@@ -552,7 +539,6 @@ services:
     environment:
       - GROCY_API_URL=http://grocy/api
       - GROCY_API_KEY=${GROCY_API_KEY}
-      - SPOONACULAR_API_KEY=${SPOONACULAR_API_KEY}
       - CLAUDE_API_KEY=${CLAUDE_API_KEY}
       - CLAUDE_MODEL=claude-sonnet-4-5-20250929
       - RECIPE_DIR=/app/recipes
@@ -599,7 +585,6 @@ volumes:
 5. Redirects to Settings page
 6. User enters:
    - Claude API key
-   - Spoonacular API key
    - Grocy URL (pre-filled: http://grocy)
    - Grocy API key (from Grocy UI)
 7. Backend validates and saves settings
@@ -614,7 +599,7 @@ volumes:
 6. Tool completes
 7. **Recipe carousel appears** with 3-5 recipe cards
 8. Each card shows:
-   - Spoonacular recipe image
+   - Recipe image
    - Match % badge (e.g., "92% match")
    - Missing items: "panko breadcrumbs"
    - Cook time: "30 min"
@@ -674,10 +659,8 @@ volumes:
 // recipes/{recipe-name}.json
 {
   "id": "recipe-123",
-  "source": "spoonacular", // or "custom"
-  "spoonacularId": 663050,
   "title": "Salmon Cakes",
-  "image": "https://spoonacular.com/...",
+  "image": "https://...",
   "servings": 4,
   "readyInMinutes": 30,
   "ingredients": [...],
@@ -728,7 +711,6 @@ volumes:
 
 ### Backend
 - Connection pooling for database
-- Redis cache for Spoonacular API responses (reduce API calls)
 - WebSocket connection reuse
 - Conversation history pagination (load last 50 messages)
 
@@ -774,7 +756,6 @@ volumes:
 - [ ] Recipe carousel
 - [ ] Recipe book page
 - [ ] Save/delete recipes
-- [ ] Spoonacular image integration
 - [ ] Match percentage display
 
 ### Phase 3: Polish & Settings (Week 3)
@@ -869,7 +850,7 @@ pantrybot-client/
 | Family Access | ❌ Individual app | ✅ Web browser |
 | Conversation History | ✅ Built-in | ✅ Persistent |
 | Tool Activity | ⚠️ Hidden | ✅ Real-time display |
-| Recipe Images | ❌ No | ✅ Spoonacular photos |
+| Recipe Images | ❌ No | ✅ Via image URL |
 | One-Click Deploy | ❌ Manual setup | ✅ docker-compose up |
 
 ---
