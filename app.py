@@ -379,4 +379,6 @@ def shopping_delete(id):
 
 if __name__ == "__main__":
     _db.init_db()
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    from waitress import serve
+    print("PantryBot running at http://127.0.0.1:5000")
+    serve(app, host="127.0.0.1", port=5000)
