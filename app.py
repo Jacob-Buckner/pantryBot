@@ -280,10 +280,20 @@ def recipe_add_missing(id):
     for ri in ris:
         shortfall = ri["amount"] - ri["pantry_qty"]
         if shortfall > 0:
-            db.execute(
-                "INSERT INTO shopping_list (name, quantity, unit) VALUES (?, ?, ?)",
-                (ri["name"], round(shortfall, 4), ri["unit"]),
-            )
+            existing = db.execute(
+                "SELECT id FROM shopping_list WHERE LOWER(name) = LOWER(?)",
+                (ri["name"],),
+            ).fetchone()
+            if existing:
+                db.execute(
+                    "UPDATE shopping_list SET quantity = quantity + ? WHERE id=?",
+                    (round(shortfall, 4), existing["id"]),
+                )
+            else:
+                db.execute(
+                    "INSERT INTO shopping_list (name, quantity, unit) VALUES (?, ?, ?)",
+                    (ri["name"], round(shortfall, 4), ri["unit"]),
+                )
             added += 1
 
     db.commit()
@@ -328,14 +338,22 @@ def shopping():
 @app.route("/shopping/add", methods=["POST"])
 def shopping_add():
     db = get_db()
-    db.execute(
-        "INSERT INTO shopping_list (name, quantity, unit) VALUES (?, ?, ?)",
-        (
-            request.form["name"].strip(),
-            float(request.form.get("quantity") or 1),
-            request.form.get("unit", "count").strip() or "count",
-        ),
-    )
+    name = request.form["name"].strip()
+    quantity = float(request.form.get("quantity") or 1)
+    unit = request.form.get("unit", "count").strip() or "count"
+    existing = db.execute(
+        "SELECT id FROM shopping_list WHERE LOWER(name) = LOWER(?)", (name,)
+    ).fetchone()
+    if existing:
+        db.execute(
+            "UPDATE shopping_list SET quantity = quantity + ? WHERE id=?",
+            (quantity, existing["id"]),
+        )
+    else:
+        db.execute(
+            "INSERT INTO shopping_list (name, quantity, unit) VALUES (?, ?, ?)",
+            (name, quantity, unit),
+        )
     db.commit()
     return redirect(url_for("shopping"))
 
