@@ -340,8 +340,35 @@ def shopping_add():
     return redirect(url_for("shopping"))
 
 
+@app.route("/shopping/<int:id>/got-it", methods=["POST"])
+def shopping_got_it(id):
+    """Mark item as purchased: add its quantity to the pantry, then remove from list."""
+    db = get_db()
+    item = db.execute("SELECT * FROM shopping_list WHERE id=?", (id,)).fetchone()
+    if item:
+        existing = db.execute(
+            "SELECT id, quantity FROM ingredients WHERE LOWER(name) = LOWER(?)",
+            (item["name"],),
+        ).fetchone()
+        if existing:
+            db.execute(
+                "UPDATE ingredients SET quantity = quantity + ? WHERE id=?",
+                (item["quantity"], existing["id"]),
+            )
+        else:
+            db.execute(
+                "INSERT INTO ingredients (name, quantity, unit) VALUES (?, ?, ?)",
+                (item["name"], item["quantity"], item["unit"]),
+            )
+        db.execute("DELETE FROM shopping_list WHERE id=?", (id,))
+        db.commit()
+        flash(f"Added {item['quantity']} {item['unit']} of {item['name']} to pantry.")
+    return redirect(url_for("shopping"))
+
+
 @app.route("/shopping/<int:id>/delete", methods=["POST"])
 def shopping_delete(id):
+    """Remove from shopping list without touching the pantry."""
     db = get_db()
     db.execute("DELETE FROM shopping_list WHERE id=?", (id,))
     db.commit()
