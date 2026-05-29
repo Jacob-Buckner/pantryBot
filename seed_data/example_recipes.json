@@ -1,0 +1,86 @@
+[
+  {
+    "name": "Scrambled Eggs",
+    "servings": 2,
+    "prep_minutes": 10,
+    "notes": "Simple weekday breakfast",
+    "instructions": "## Scrambled Eggs\n\n1. Crack eggs into a bowl and beat well with a fork.\n2. Add milk, salt, and pepper; beat again.\n3. Melt butter in a pan over medium-low heat.\n4. Pour in the egg mixture and stir gently and continuously with a spatula.\n5. Remove from heat while the eggs still look slightly underdone — residual heat finishes them.\n6. Serve immediately.",
+    "ingredients": [
+      {"name": "Eggs",         "amount": 4,  "unit": "count"},
+      {"name": "Butter",       "amount": 15, "unit": "g"},
+      {"name": "Milk",         "amount": 30, "unit": "g"},
+      {"name": "Salt",         "amount": 2,  "unit": "g"},
+      {"name": "Black Pepper", "amount": 1,  "unit": "g"}
+    ]
+  },
+  {
+    "name": "Spaghetti Bolognese",
+    "servings": 4,
+    "prep_minutes": 45,
+    "notes": "Classic family dinner — sauce improves the longer it simmers",
+    "instructions": "## Spaghetti Bolognese\n\n### Sauce\n\n1. Heat olive oil in a large, heavy pot over medium heat.\n2. Add onion and garlic; cook, stirring occasionally, until softened — about 5 minutes.\n3. Add ground beef; break it up with a wooden spoon and cook until fully browned.\n4. Stir in crushed tomatoes, tomato paste, and oregano.\n5. Season generously with salt and pepper.\n6. Reduce heat to low and simmer, partially covered, for 25–30 minutes.\n\n### To serve\n\n1. Cook spaghetti in a large pot of well-salted boiling water until al dente.\n2. Drain, reserving a cup of pasta water.\n3. Toss spaghetti with the sauce, adding a splash of pasta water to loosen.\n4. Serve topped with grated Parmesan.",
+    "ingredients": [
+      {"name": "Spaghetti",       "amount": 400, "unit": "g"},
+      {"name": "Ground Beef",     "amount": 500, "unit": "g"},
+      {"name": "Onion",           "amount": 150, "unit": "g"},
+      {"name": "Garlic",          "amount": 10,  "unit": "g"},
+      {"name": "Crushed Tomatoes","amount": 400, "unit": "g"},
+      {"name": "Tomato Paste",    "amount": 30,  "unit": "g"},
+      {"name": "Olive Oil",       "amount": 20,  "unit": "g"},
+      {"name": "Parmesan",        "amount": 40,  "unit": "g"},
+      {"name": "Dried Oregano",   "amount": 3,   "unit": "g"}
+    ]
+  },
+  {
+    "name": "Pancakes",
+    "servings": 4,
+    "prep_minutes": 20,
+    "notes": "Weekend breakfast staple — don't over-mix",
+    "instructions": "## Pancakes\n\n1. Whisk flour, baking powder, sugar, and salt together in a large bowl.\n2. In a separate bowl, beat the eggs, then mix in milk and melted butter.\n3. Pour the wet ingredients into the dry. Stir until *just* combined — a few lumps are fine; over-mixing makes tough pancakes.\n4. Heat a lightly buttered non-stick pan over medium heat.\n5. Pour about ¼ cup of batter per pancake. Cook until bubbles form across the surface and the edges look set, then flip.\n6. Cook another 1–2 minutes until golden. Keep warm in a low oven while you finish the batch.\n7. Serve with maple syrup or fresh fruit.",
+    "ingredients": [
+      {"name": "Plain Flour",   "amount": 240, "unit": "g"},
+      {"name": "Milk",          "amount": 300, "unit": "g"},
+      {"name": "Eggs",          "amount": 2,   "unit": "count"},
+      {"name": "Butter",        "amount": 30,  "unit": "g"},
+      {"name": "Baking Powder", "amount": 10,  "unit": "g"},
+      {"name": "Sugar",         "amount": 15,  "unit": "g"},
+      {"name": "Salt",          "amount": 3,   "unit": "g"}
+    ]
+  },
+  {
+    "name": "Banana Oat Muffins",
+    "servings": 12,
+    "prep_minutes": 30,
+    "notes": "Great for using up overripe bananas — freezes well",
+    "instructions": "## Banana Oat Muffins\n\n1. Preheat oven to 180 °C (350 °F). Line a 12-cup muffin tin with paper cases.\n2. Mash the bananas thoroughly in a large bowl — the riper they are the better.\n3. Stir in melted butter, then sugar, egg, and vanilla extract.\n4. Add flour, oats, baking soda, and salt. Fold until just combined; don't overwork the batter.\n5. Divide evenly among the muffin cups (about ¾ full each).\n6. Bake 20–22 minutes until a toothpick inserted in the centre comes out clean.\n7. Cool in the tin for 5 minutes, then transfer to a wire rack.",
+    "ingredients": [
+      {"name": "Banana",         "amount": 3,   "unit": "count"},
+      {"name": "Plain Flour",    "amount": 180, "unit": "g"},
+      {"name": "Rolled Oats",    "amount": 80,  "unit": "g"},
+      {"name": "Butter",         "amount": 80,  "unit": "g"},
+      {"name": "Sugar",          "amount": 100, "unit": "g"},
+      {"name": "Eggs",           "amount": 1,   "unit": "count"},
+      {"name": "Baking Soda",    "amount": 5,   "unit": "g"},
+      {"name": "Salt",           "amount": 2,   "unit": "g"},
+      {"name": "Vanilla Extract","amount": 5,   "unit": "g"}
+    ]
+  },
+  {
+    "name": "Chicken and Rice",
+    "servings": 4,
+    "prep_minutes": 40,
+    "notes": "One-pot dinner, easy weeknight meal",
+    "instructions": "## Chicken and Rice\n\n1. Season chicken thighs generously with salt, pepper, and paprika on both sides.\n2. Heat olive oil in a large, deep pan (with a lid) over medium-high heat.\n3. Brown the chicken, skin-side down, for 4–5 minutes. Flip and cook another 3 minutes. Remove and set aside.\n4. Reduce heat to medium. Add onion and garlic to the same pan; cook until softened, about 4 minutes.\n5. Add rice and stir to coat in the pan juices for 1 minute.\n6. Pour in chicken broth and stir, scraping up any brown bits from the bottom.\n7. Nestle the chicken pieces on top. Bring to a boil, then reduce heat to low.\n8. Cover and cook for 20 minutes, until rice is cooked and chicken is done through.\n9. Rest, covered, for 5 minutes before serving.",
+    "ingredients": [
+      {"name": "Chicken Thighs", "amount": 600, "unit": "g"},
+      {"name": "Long Grain Rice","amount": 300, "unit": "g"},
+      {"name": "Chicken Broth", "amount": 600, "unit": "g"},
+      {"name": "Onion",         "amount": 120, "unit": "g"},
+      {"name": "Garlic",        "amount": 8,   "unit": "g"},
+      {"name": "Olive Oil",     "amount": 20,  "unit": "g"},
+      {"name": "Paprika",       "amount": 4,   "unit": "g"},
+      {"name": "Salt",          "amount": 5,   "unit": "g"},
+      {"name": "Black Pepper",  "amount": 2,   "unit": "g"}
+    ]
+  }
+]

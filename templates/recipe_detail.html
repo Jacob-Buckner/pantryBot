@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}{{ recipe.name }} — PantryBot{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 style="margin-bottom:0.2rem">{{ recipe.name }}</h1>
+    <p class="recipe-meta">{{ recipe.servings }} servings · {{ recipe.prep_minutes }} min prep</p>
+  </div>
+  <div style="display:flex;gap:0.5rem;align-items:flex-start">
+    <a href="{{ url_for('recipe_edit', id=recipe.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+    <form method="post" action="{{ url_for('recipe_delete', id=recipe.id) }}" style="display:inline">
+      <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+    </form>
+  </div>
+</div>
+
+{% if recipe.notes %}
+<p style="color:var(--text-muted);font-style:italic;margin-bottom:1.25rem">{{ recipe.notes }}</p>
+{% endif %}
+
+<h2>Ingredients</h2>
+{% if ingredients %}
+<ul class="ingredient-list">
+  {% for ing in ingredients %}
+  <li>
+    {% if ing.status == 'ok' %}
+      <span class="badge badge-ok">✓</span>
+    {% else %}
+      <span class="badge badge-short">⚠ need {{ ing.shortfall|round(1) }} {{ ing.unit }}</span>
+    {% endif %}
+    <span><strong>{{ ing.amount }} {{ ing.unit }}</strong> {{ ing.name }}</span>
+    <span class="pantry-qty">(have {{ ing.pantry_qty|round(2) }})</span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty-state">No ingredients linked to this recipe.</p>
+{% endif %}
+
+<div class="actions">
+  <form method="post" action="{{ url_for('recipe_add_missing', id=recipe.id) }}">
+    <button type="submit" class="btn btn-secondary">Add missing to shopping list</button>
+  </form>
+  <form method="post" action="{{ url_for('recipe_mark_made', id=recipe.id) }}">
+    <button type="submit" class="btn btn-primary">Mark as made</button>
+  </form>
+</div>
+
+<h2>Instructions</h2>
+<div class="card instructions">
+  {{ instructions_html|safe }}
+</div>
+
+<p style="margin-top:1rem">
+  <a href="{{ url_for('recipes') }}" style="color:var(--accent);font-size:0.9rem">← Back to recipes</a>
+</p>
+{% endblock %}

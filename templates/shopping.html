@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Shopping List — PantryBot{% endblock %}
+{% block content %}
+<h1>Shopping List</h1>
+
+<div class="card">
+  <form method="post" action="{{ url_for('shopping_add') }}">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Item *</label>
+        <input type="text" name="name" required style="width:200px">
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" name="quantity" step="any" min="0" value="1" style="width:80px">
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" value="count" style="width:80px">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{% if items %}
+<table>
+  <thead>
+    <tr>
+      <th>Item</th>
+      <th>Quantity</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td>{{ item.quantity }} {{ item.unit }}</td>
+      <td>
+        <form method="post" action="{{ url_for('shopping_delete', id=item.id) }}"
+              style="display:inline">
+          <button type="submit" class="btn btn-secondary btn-sm">✓ Got it</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty-state">Shopping list is empty.</p>
+{% endif %}
+{% endblock %}

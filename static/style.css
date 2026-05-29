@@ -1,0 +1,293 @@
+:root {
+  --bg:           #f7f6f3;
+  --surface:      #ffffff;
+  --border:       #e2dfd8;
+  --text:         #1c1b18;
+  --text-muted:   #6e6b62;
+  --accent:       #2d6a4f;
+  --accent-hover: #245840;
+  --accent-light: #d8f3dc;
+  --warn:         #e07d10;
+  --warn-bg:      #fff4e0;
+  --danger:       #b83232;
+  --danger-bg:    #fdecea;
+  --ok-color:     #1b4332;
+  --radius:       6px;
+  --shadow:       0 1px 3px rgba(0,0,0,.07);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* ── Navigation ─────────────────────────────────────────── */
+nav {
+  background: var(--accent);
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  height: 50px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.15);
+}
+
+nav .brand {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: white;
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  margin-right: 0.5rem;
+}
+
+nav a {
+  color: rgba(255,255,255,.8);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding-bottom: 2px;
+}
+
+nav a:hover { color: white; }
+nav a.active { color: white; border-bottom: 2px solid rgba(255,255,255,.7); }
+
+/* ── Page layout ─────────────────────────────────────────── */
+main {
+  max-width: 1000px;
+  margin: 2rem auto;
+  padding: 0 1.5rem 4rem;
+}
+
+h1 { font-size: 1.45rem; font-weight: 700; margin-bottom: 1.25rem; }
+h2 { font-size: 1.05rem; font-weight: 600; margin: 1.5rem 0 0.65rem; color: var(--text); }
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+}
+
+.page-header h1 { margin-bottom: 0; }
+
+.empty-state { color: var(--text-muted); font-style: italic; margin-top: 0.5rem; }
+.empty-state a { color: var(--accent); }
+
+/* ── Flash messages ──────────────────────────────────────── */
+.flash {
+  background: var(--accent-light);
+  border: 1px solid #a8d5b5;
+  color: var(--ok-color);
+  padding: 0.7rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+/* ── Cards ───────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.inline-edit-form {
+  background: #f0efe9;
+  padding: 0.9rem 1rem;
+  border-top: 2px solid var(--accent);
+}
+
+/* ── Forms ───────────────────────────────────────────────── */
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+input[type=text], input[type=number], input[type=datetime-local], textarea {
+  padding: 0.42rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  background: white;
+  color: var(--text);
+  font-family: inherit;
+}
+
+input:focus, textarea:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  border-color: transparent;
+}
+
+textarea {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  font-family: 'Menlo', 'Consolas', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* ── Buttons ─────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.44rem 1rem;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-decoration: none;
+  font-family: inherit;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.btn-primary  { background: var(--accent);  color: white; }
+.btn-primary:hover  { background: var(--accent-hover); }
+.btn-secondary { background: var(--border); color: var(--text); }
+.btn-secondary:hover { background: #cdc9bf; }
+.btn-danger   { background: var(--danger);  color: white; }
+.btn-danger:hover   { background: #952828; }
+.btn-sm { padding: 0.22rem 0.6rem; font-size: 0.8rem; }
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 1.25rem 0;
+  flex-wrap: wrap;
+}
+
+/* ── Tables ──────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+
+th {
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+td {
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+
+tr:last-child td { border-bottom: none; }
+tr.expiring { background: var(--warn-bg); }
+tr.expired  { background: var(--danger-bg); }
+tr.expiring td:first-child,
+tr.expired  td:first-child { font-weight: 600; }
+
+.notes-cell { color: var(--text-muted); font-size: 0.85rem; max-width: 200px; }
+
+/* ── Sort links ──────────────────────────────────────────── */
+.sort-links {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.sort-links a { color: var(--accent); text-decoration: none; }
+.sort-links a:hover { text-decoration: underline; }
+.sort-links a.active { font-weight: 700; color: var(--text); }
+
+/* ── Recipe list ─────────────────────────────────────────── */
+.recipe-list { list-style: none; }
+
+.recipe-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.recipe-list li:last-child { border-bottom: none; }
+.recipe-list a { font-weight: 500; text-decoration: none; color: var(--accent); font-size: 1rem; }
+.recipe-list a:hover { text-decoration: underline; }
+.recipe-meta { font-size: 0.85rem; color: var(--text-muted); }
+
+/* ── Recipe detail ───────────────────────────────────────── */
+.ingredient-list { list-style: none; margin-bottom: 0.5rem; }
+
+.ingredient-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.38rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+}
+
+.ingredient-list li:last-child { border-bottom: none; }
+.pantry-qty { color: var(--text-muted); font-size: 0.82rem; margin-left: auto; }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.badge-ok    { background: var(--accent-light); color: var(--ok-color); }
+.badge-short { background: var(--danger-bg);    color: var(--danger); }
+
+.instructions { line-height: 1.75; }
+.instructions h1, .instructions h2, .instructions h3 { margin: 1rem 0 0.4rem; }
+.instructions p { margin-bottom: 0.65rem; }
+.instructions ol, .instructions ul { padding-left: 1.4rem; margin-bottom: 0.65rem; }
+.instructions li { margin-bottom: 0.3rem; }
+
+/* ── Recipe form ingredients grid ───────────────────────── */
+.ri-grid {
+  display: grid;
+  grid-template-columns: 1fr 90px 80px;
+  gap: 0.4rem;
+  margin-bottom: 0.3rem;
+}
+
+.ri-grid-header span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0 0.1rem;
+}

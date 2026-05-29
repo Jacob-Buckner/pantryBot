@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}PantryBot{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<nav>
+  <a class="brand" href="{{ url_for('pantry') }}">PantryBot</a>
+  <a href="{{ url_for('pantry') }}"{% if request.endpoint == 'pantry' %} class="active"{% endif %}>Pantry</a>
+  <a href="{{ url_for('recipes') }}"{% if request.endpoint and 'recipe' in request.endpoint %} class="active"{% endif %}>Recipes</a>
+  <a href="{{ url_for('shopping') }}"{% if request.endpoint and 'shopping' in request.endpoint %} class="active"{% endif %}>Shopping</a>
+</nav>
+<main>
+  {% for msg in get_flashed_messages() %}
+  <div class="flash">{{ msg }}</div>
+  {% endfor %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

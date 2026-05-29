@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Edit Recipe' if recipe else 'New Recipe' }} — PantryBot{% endblock %}
+{% block content %}
+<h1>{{ 'Edit Recipe' if recipe else 'New Recipe' }}</h1>
+
+<form method="post">
+  <div class="card">
+    <div class="form-row">
+      <div class="form-group" style="flex:1;min-width:200px">
+        <label>Name *</label>
+        <input type="text" name="name" required value="{{ recipe.name if recipe else '' }}">
+      </div>
+      <div class="form-group">
+        <label>Servings</label>
+        <input type="number" name="servings" min="1" style="width:80px"
+               value="{{ recipe.servings if recipe else 4 }}">
+      </div>
+      <div class="form-group">
+        <label>Prep (min)</label>
+        <input type="number" name="prep_minutes" min="0" style="width:80px"
+               value="{{ recipe.prep_minutes if recipe else 0 }}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <input type="text" name="notes" style="width:100%"
+             value="{{ recipe.notes if recipe and recipe.notes else '' }}">
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">Ingredients</h2>
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:0.75rem">
+      Ingredient names are matched against your pantry (case-insensitive). New names are auto-added at 0 quantity.
+    </p>
+    <div class="ri-grid ri-grid-header">
+      <span>Ingredient</span><span>Amount</span><span>Unit</span>
+    </div>
+    {% for i in range(20) %}
+      {% set ri = recipe_ingredients[i] if i < recipe_ingredients|length else None %}
+      <div class="ri-grid">
+        <input type="text" name="ri_name_{{ i }}"
+               value="{{ ri.name if ri else '' }}" placeholder="e.g. plain flour">
+        <input type="number" name="ri_amount_{{ i }}" step="any" min="0"
+               value="{{ ri.amount if ri else '' }}" placeholder="0">
+        <input type="text" name="ri_unit_{{ i }}"
+               value="{{ ri.unit if ri else '' }}" placeholder="g">
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card">
+    <h2 style="margin-top:0">
+      Instructions
+      <span style="font-weight:400;font-size:0.85rem;color:var(--text-muted)">— Markdown</span>
+    </h2>
+    <textarea name="instructions" placeholder="## Step 1&#10;&#10;Mix ingredients...">{{ recipe.instructions if recipe else '' }}</textarea>
+  </div>
+
+  <div class="actions">
+    <button type="submit" class="btn btn-primary">Save Recipe</button>
+    <a href="{{ url_for('recipes') }}" class="btn btn-secondary">Cancel</a>
+    {% if recipe %}
+    <form method="post" action="{{ url_for('recipe_delete', id=recipe.id) }}"
+          style="display:inline;margin-left:auto">
+      <button type="submit" class="btn btn-danger">Delete Recipe</button>
+    </form>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

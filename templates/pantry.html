@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Pantry — PantryBot{% endblock %}
+{% block content %}
+<h1>Pantry</h1>
+
+<div class="card">
+  <h2 style="margin-top:0">Add Ingredient</h2>
+  <form method="post" action="{{ url_for('add_ingredient') }}">
+    <div class="form-row">
+      <div class="form-group">
+        <label>Name *</label>
+        <input type="text" name="name" required style="width:160px">
+      </div>
+      <div class="form-group">
+        <label>Quantity</label>
+        <input type="number" name="quantity" step="any" min="0" value="0" style="width:80px" required>
+      </div>
+      <div class="form-group">
+        <label>Unit</label>
+        <input type="text" name="unit" value="count" style="width:70px">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <input type="text" name="category" style="width:120px">
+      </div>
+      <div class="form-group">
+        <label>Best By</label>
+        <input type="datetime-local" name="best_by">
+      </div>
+      <div class="form-group">
+        <label>Opened</label>
+        <input type="datetime-local" name="opened_at">
+      </div>
+      <div class="form-group" style="justify-content:flex-end">
+        <button type="submit" class="btn btn-primary">Add</button>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label>Notes</label>
+        <input type="text" name="notes" style="width:100%">
+      </div>
+    </div>
+  </form>
+</div>
+
+{% macro sort_link(label, col) %}
+  {% set flip = 'desc' if (sort == col and direction == 'asc') else 'asc' %}
+  <a href="{{ url_for('pantry', sort=col, dir=flip) }}"
+     class="{{ 'active' if sort == col else '' }}">{{ label }}{% if sort == col %} {{ '↓' if direction == 'asc' else '↑' }}{% endif %}</a>
+{% endmacro %}
+
+<div class="sort-links">
+  Sort: {{ sort_link('Name', 'name') }} · {{ sort_link('Quantity', 'quantity') }} · {{ sort_link('Best By', 'best_by') }} · {{ sort_link('Category', 'category') }}
+</div>
+
+{% if ingredients %}
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Quantity</th>
+      <th>Category</th>
+      <th>Best By</th>
+      <th>Opened</th>
+      <th>Notes</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for ing in ingredients %}
+    {% if editing_id == ing.id %}
+    <tr>
+      <td colspan="7" style="padding:0">
+        <form method="post" action="{{ url_for('edit_ingredient', id=ing.id) }}" class="inline-edit-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" name="name" value="{{ ing.name }}" required style="width:150px">
+            </div>
+            <div class="form-group">
+              <label>Quantity</label>
+              <input type="number" name="quantity" step="any" min="0" value="{{ ing.quantity }}" style="width:80px" required>
+            </div>
+            <div class="form-group">
+              <label>Unit</label>
+              <input type="text" name="unit" value="{{ ing.unit }}" style="width:70px">
+            </div>
+            <div class="form-group">
+              <label>Category</label>
+              <input type="text" name="category" value="{{ ing.category or '' }}" style="width:110px">
+            </div>
+            <div class="form-group">
+              <label>Best By</label>
+              <input type="datetime-local" name="best_by" value="{{ ing.best_by or '' }}">
+            </div>
+            <div class="form-group">
+              <label>Opened</label>
+              <input type="datetime-local" name="opened_at" value="{{ ing.opened_at or '' }}">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1">
+              <label>Notes</label>
+              <input type="text" name="notes" value="{{ ing.notes or '' }}" style="width:100%">
+            </div>
+            <div class="form-group" style="justify-content:flex-end">
+              <div style="display:flex;gap:0.5rem;align-items:flex-end">
+                <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                <a href="{{ url_for('pantry', sort=sort, dir=direction) }}" class="btn btn-secondary btn-sm">Cancel</a>
+              </div>
+            </div>
+          </div>
+        </form>
+      </td>
+    </tr>
+    {% else %}
+    <tr class="{{ ing.expiry_status or '' }}">
+      <td>{% if ing.expiry_status %}⚠ {% endif %}{{ ing.name }}</td>
+      <td>{{ ing.quantity|round(2) }} {{ ing.unit }}</td>
+      <td>{{ ing.category or '—' }}</td>
+      <td>{{ ing.best_by[:10] if ing.best_by else '—' }}</td>
+      <td>{{ ing.opened_at[:10] if ing.opened_at else '—' }}</td>
+      <td class="notes-cell">{{ ing.notes or '—' }}</td>
+      <td style="white-space:nowrap">
+        <a href="{{ url_for('pantry', editing=ing.id, sort=sort, dir=direction) }}"
+           class="btn btn-secondary btn-sm">Edit</a>
+        <form method="post" action="{{ url_for('delete_ingredient', id=ing.id) }}" style="display:inline">
+          <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {% endif %}
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty-state">No ingredients yet — add some above.</p>
+{% endif %}
+{% endblock %}

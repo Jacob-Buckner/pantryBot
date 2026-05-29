@@ -1,183 +1,75 @@
-# PantryBot
+# PantryBot v2
 
-**AI-powered pantry management using [Grocy](https://grocy.info/)**
+Local-first pantry and recipe manager. No cloud, no Docker, no external APIs — just Python and SQLite running on your Mac.
 
-PantryBot lets you manage your household pantry, discover recipes based on what you have, track chores and tasks, and more — all through natural language conversation with Claude.
+> **Looking for the Grocy-backed MCP server?** That's archived at the [v1.0.0 tag](../../releases/tag/v1.0.0).
 
-## Two Ways to Use PantryBot
+## What it does
 
-| | Claude Desktop (MCP Server) | Self-Hosted Web UI (Docker) |
-|---|---|---|
-| **Interface** | Claude Desktop app | Browser-based chat UI |
-| **Cost** | $0 (uses Claude Pro subscription) | ~$20-30/year (Anthropic API credits) |
-| **Requirements** | Python 3.8+, Claude Desktop + Pro | Docker & Docker Compose |
-| **Best for** | Personal use, already have Claude Pro | Sharing with household, standalone setup |
+- Track pantry ingredients with quantities, units, best-by dates, and categories
+- Browse recipes and see at a glance which ones you can make right now
+- Generate a shopping list for ingredients you're short on
+- Mark a recipe as made and auto-deduct ingredients from stock
 
----
+## Requirements
 
-## Option 1: Claude Desktop MCP Server
+- Python 3.10+
+- macOS (tested on M-series)
 
-Use PantryBot as an MCP (Model Context Protocol) server inside the Claude Desktop app. No API costs — runs on your Claude Pro subscription.
-
-### What You Need
-
-- **Claude Desktop App** with Pro subscription
-- **Python 3.8+**
-- **Grocy** running locally (see [Grocy Setup](#grocy-setup) below)
-
-### Setup
-
-1. **Create Python virtual environment:**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
-   ```
-
-2. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your Grocy API URL and key
-   ```
-
-3. **Add to Claude Desktop config:**
-
-   Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (see `claude_desktop_config.example.json` for reference):
-   ```json
-   {
-     "mcpServers": {
-       "pantrybot": {
-         "command": "/path/to/your/venv/bin/python",
-         "args": ["/path/to/pantrybot_mcp_server.py"],
-         "env": {
-           "GROCY_API_URL": "http://localhost:9283/api",
-           "GROCY_API_KEY": "your_grocy_api_key",
-           "RECIPE_DIR": "/path/to/data/recipes"
-         }
-       }
-     }
-   }
-   ```
-
-4. **Restart Claude Desktop** — PantryBot tools will appear automatically.
-
----
-
-## Option 2: Self-Hosted Web UI (Docker)
-
-A complete containerized setup with a React frontend, Node.js backend, and built-in Grocy instance.
-
-### What You Need
-
-- **Docker & Docker Compose**
-- **Anthropic API key** (buy credits at [console.anthropic.com](https://console.anthropic.com))
-
-### Quick Start
-
-1. **Configure environment:**
-   ```bash
-   cp .env.example .env
-   # Edit .env and add your API keys
-   ```
-
-2. **Start everything:**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Access the apps:**
-   - **PantryBot Web UI:** http://localhost:3002
-   - **Grocy (pantry management):** http://localhost:9283
-   - **Backend API:** http://localhost:8080
-
-### Architecture
-
-```
-┌─────────────────┐
-│  React Frontend │ (Port 3002)
-│   (Vite + TS)   │
-└────────┬────────┘
-         │ WebSocket
-┌────────▼────────┐
-│  Node.js Backend│ (Port 8080)
-│   + MCP Client  │──── spawns ───▶ Python MCP Server (stdio)
-└────────┬────────┘
-         │
-    ┌────▼─────┐
-    │  Grocy   │ (Port 9283)
-    │ Database │
-    └──────────┘
-```
-
-### Cost Analysis
-
-- **Model:** Claude Haiku 4.5 ($0.25/M input, $1.25/M output tokens)
-- **Per recipe search:** ~$0.02-0.05
-- **$5 API credit** = ~100-250 recipe interactions
-- **Average family:** 10-20 interactions/week = **~$20-30/year**
-
-Current optimizations:
-- Using Haiku instead of Sonnet (12x cheaper)
-- Condensed system prompt (78% reduction)
-- Limited conversation history (last 10 messages)
-- Reduced max output tokens (2048 vs 4096)
-
-### Database Access
-
-The Grocy SQLite database is at:
-```
-./data/grocy/data/grocy.db
-```
-
----
-
-## Features
-
-### Pantry Management
-- Check inventory, filter by category
-- Add/remove items from stock
-- Track expiring products
-- Low stock alerts with auto-add to shopping list
-
-### Recipe Discovery
-- Browse and retrieve recipes saved in Grocy
-- Save recipes to Grocy with full ingredient and instruction details
-- Auto-creates missing pantry products when saving a recipe
-
-### Shopping Lists
-- Add items to shopping list
-- View current shopping list
-- Auto-generate from low stock items
-
-### Household Management
-- Chores — track, create, and complete recurring chores
-- Tasks — manage one-off to-do items
-- Batteries — track charge cycles for household batteries
-
-### Generic API Access
-- Direct Grocy API access for anything not covered by built-in tools
-
----
-
-## Grocy Setup
-
-If you don't already have Grocy running (the Docker Web UI option includes it automatically):
+## Quick start
 
 ```bash
-docker run -d \
-  --name grocy \
-  -p 9283:80 \
-  -e PUID=1000 \
-  -e PGID=1000 \
-  -e TZ=America/Chicago \
-  -v grocy-data:/config \
-  linuxserver/grocy:latest
+# 1. Create a virtual environment and install dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Launch — creates data/pantrybot.db automatically on first run
+python app.py
+
+# 3. Open http://127.0.0.1:5000
 ```
 
-Access Grocy at http://localhost:9283 and grab your API key from **Settings > Manage API keys**.
+## Load example recipes
 
----
+```bash
+python seed.py                           # loads seed_data/example_recipes.json
+python seed.py path/to/my_recipes.json  # loads a custom file
+```
 
-## Support
+See `seed_data/example_recipes.json` for the expected JSON format.
 
-Self-hosted, no subscription, no telemetry, no ongoing fees.
+## Project layout
+
+```
+app.py                  Flask app — all routes
+db.py                   SQLite schema + connection helper
+seed.py                 Import recipes from a JSON file
+requirements.txt
+
+data/
+  pantrybot.db          SQLite database (auto-created, gitignored)
+
+static/
+  style.css             Hand-written CSS, no build step
+
+templates/
+  base.html             Shared layout and nav
+  pantry.html           / — pantry view
+  recipes.html          /recipes — recipe list
+  recipe_detail.html    /recipes/<id>
+  recipe_form.html      /recipes/new and /recipes/<id>/edit
+  shopping.html         /shopping — shopping list
+
+seed_data/
+  example_recipes.json  Sample data for seed.py
+```
+
+## Units
+
+Weight units: `g`, `kg`, `oz`, `lb`. Countable items (eggs, cans, etc.) use `count`.
+No unit conversion is performed — amounts are compared directly, so keep units consistent between your pantry and your recipes.
+
+## LLM / chat features
+
+Planned for v2.0.0 final. See `ROADMAP.md`.
