@@ -2,7 +2,7 @@
 
 Local-first pantry and recipe manager. No cloud, no Docker, no external APIs — just Python and SQLite running on your Mac.
 
-> **Looking for the Grocy-backed MCP server?** That's archived at the [v1.0.0 tag](../../releases/tag/v1.0.0).
+> **Looking for the Grocy-backed MCP server?** That's archived at the [v1.0.0 tag](https://repo.localkernel.lan/localKernel/pantryBot/releases/tag/v1.0.0).
 
 ## What it does
 
